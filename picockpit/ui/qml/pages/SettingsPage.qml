@@ -158,6 +158,119 @@ Flickable {
             color: Theme.colors.surface_alt
         }
 
+        // ---------------------------------------------------- tela dividida
+        Column {
+            spacing: 10
+
+            Text {
+                text: qsTr("Tela dividida")
+                color: Theme.colors.text
+                font { pixelSize: 20; weight: Font.DemiBold }
+            }
+
+            Text {
+                text: qsTr("A pagina escolhida na trilha ocupa a regiao principal")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+            }
+
+            Row {
+                spacing: 10
+
+                OptionChip {
+                    text: qsTr("Desligada")
+                    selected: !Layout.split
+                    onActivated: Layout.setSplit(false)
+                }
+
+                Repeater {
+                    model: Layout.ratioOptions
+
+                    delegate: OptionChip {
+                        required property var modelData
+
+                        text: modelData.label
+                        selected: Layout.split && Math.abs(modelData.value - Layout.ratio) < 0.01
+                        onActivated: {
+                            Layout.setRatio(modelData.value)
+                            Layout.setSplit(true)
+                        }
+                    }
+                }
+            }
+
+            Text {
+                text: qsTr("Pagina da regiao secundaria")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+                visible: Layout.split
+            }
+
+            Flow {
+                width: page.width - 48
+                spacing: 8
+                visible: Layout.split
+
+                Repeater {
+                    model: Layout.splittablePages
+
+                    delegate: OptionChip {
+                        required property string modelData
+
+                        text: Layout.labelOf(modelData)
+                        selected: modelData === Layout.secondary
+                        onActivated: Layout.setSecondary(modelData)
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            width: page.width - 48
+            height: 1
+            color: Theme.colors.surface_alt
+        }
+
+        // --------------------------------------------------------- widgets
+        Column {
+            spacing: 10
+
+            Text {
+                text: qsTr("Widgets")
+                color: Theme.colors.text
+                font { pixelSize: 20; weight: Font.DemiBold }
+            }
+
+            Text {
+                text: qsTr("Cada widget e independente; ligue e desligue a vontade")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+            }
+
+            Flow {
+                width: page.width - 48
+                spacing: 8
+
+                Repeater {
+                    model: Layout.availableWidgets
+
+                    delegate: OptionChip {
+                        required property var modelData
+
+                        text: modelData.label
+                        selected: Layout.widgets.indexOf(modelData.key) >= 0
+                        onActivated: Layout.toggleWidget(modelData.key)
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            width: page.width - 48
+            height: 1
+            color: Theme.colors.surface_alt
+        }
+
         // ------------------------------------------------------ combustivel
         Column {
             spacing: 10

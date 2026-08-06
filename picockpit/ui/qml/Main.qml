@@ -1,12 +1,12 @@
 // Janela principal do PiCockpit OS.
 //
-// Estrutura: barra superior fixa, trilha de navegacao a esquerda e StackView
-// de conteudo, tudo dentro de uma tela logica que pode ser escalada.
+// Barra superior fixa, trilha de navegacao a esquerda e area de conteudo que
+// pode ser inteira ou dividida em duas regioes. Tudo dentro de uma tela logica
+// que acompanha a escala escolhida nos ajustes.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Window
 import PiCockpit 1.0
-import "pages"
 
 ApplicationWindow {
     id: root
@@ -24,36 +24,13 @@ ApplicationWindow {
     // quem decide e a configuracao, e a janela ja nasce em tela cheia.
     property bool kiosk: AppInfo.kiosk
 
-    readonly property var pages: [
-        { key: "dashboard", label: qsTr("Painel"), glyph: "◴" },
-        { key: "performance", label: qsTr("Tempos"), glyph: "⏱" },
-        { key: "charts",    label: qsTr("Graficos"), glyph: "◫" },
-        { key: "trips",     label: qsTr("Viagens"), glyph: "▤" },
-        { key: "media",     label: qsTr("Media"),  glyph: "▶" },
-        { key: "settings",  label: qsTr("Ajustes"), glyph: "⚙" }
-    ]
-
+    readonly property var pages: Layout.pages
     property int currentIndex: 0
 
-    onCurrentIndexChanged: contentStack.replace(pageComponent(currentIndex))
-
-    function pageComponent(index) {
-        switch (root.pages[index].key) {
-        case "performance": return performancePage
-        case "charts":   return chartsPage
-        case "trips":    return tripsPage
-        case "media":    return mediaPage
-        case "settings": return settingsPage
-        default:         return dashboardPage
-        }
-    }
-
-    Component { id: dashboardPage; DashboardPage {} }
-    Component { id: performancePage; PerformancePage {} }
-    Component { id: chartsPage;    ChartsPage {} }
-    Component { id: tripsPage;     TripsPage {} }
-    Component { id: mediaPage;     MediaPage {} }
-    Component { id: settingsPage;  SettingsPage {} }
+    readonly property string primaryKey: pages[currentIndex].key
+    // A pagina de ajustes ocupa a tela toda mesmo com divisao ligada: e um
+    // formulario, e formulario espremido em meia tela nao se usa dirigindo.
+    readonly property bool splitActive: Layout.split && pages[currentIndex].splittable
 
     Shortcut {
         sequences: ["F11"]
@@ -88,6 +65,7 @@ ApplicationWindow {
             anchors { top: parent.top; left: parent.left; right: parent.right }
             height: 56
             title: root.pages[root.currentIndex].label
+                + (root.splitActive ? "  ·  " + Layout.labelOf(Layout.secondary) : "")
         }
 
         NavigationRail {
@@ -99,23 +77,53 @@ ApplicationWindow {
             onSelected: function (index) { root.currentIndex = index }
         }
 
-        StackView {
-            id: contentStack
+        Item {
+            id: content
+
             anchors {
                 top: topBar.bottom
                 left: rail.right
                 right: parent.right
                 bottom: parent.bottom
             }
-            initialItem: dashboardPage
 
-            // Transicoes curtas: em painel automotivo, resposta percebida importa
-            // mais do que animacao elaborada.
-            replaceEnter: Transition {
-                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 }
+            PageHost {
+                id: primaryHost
+
+                anchors { top: parent.top; left: parent.left; bottom: parent.bottom }
+                width: root.splitActive
+                    ? Math.round(content.width * Layout.ratio) - 1
+                    : content.width
+                pageKey: root.primaryKey
+
+                Behavior on width {
+                    NumberAnimation { duration: 160; easing.type: Easing.OutQuad }
+                }
             }
-            replaceExit: Transition {
-                NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 90 }
+
+            Rectangle {
+                id: divider
+
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    left: primaryHost.right
+                }
+                width: 1
+                color: Theme.colors.surface_alt
+                visible: root.splitActive
+            }
+
+            PageHost {
+                anchors {
+                    top: parent.top
+                    left: divider.right
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+                visible: root.splitActive
+                active: root.splitActive
+                pageKey: Layout.secondary
             }
         }
     }

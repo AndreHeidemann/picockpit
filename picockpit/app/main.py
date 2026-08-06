@@ -29,6 +29,7 @@ from picockpit.simulation.provider import SimulationProvider
 from picockpit.ui.bridge import AppInfo, ThemeController
 from picockpit.ui.chart_controller import ChartController
 from picockpit.ui.chrono_controller import ChronoController
+from picockpit.ui.layout_controller import LayoutController
 from picockpit.ui.settings_controller import SettingsController
 from picockpit.ui.telemetry_controller import TelemetryController
 from picockpit.ui.trips_controller import TripsController
@@ -119,6 +120,7 @@ def build_engine(
     chronometer = ChronometerService(event_bus)
     chrono = ChronoController(event_bus, chronometer)
     charts = ChartController(event_bus)
+    layout = LayoutController(preferences)
     settings = SettingsController(
         provider or create_provider(app_config),
         event_bus,
@@ -161,12 +163,24 @@ def build_engine(
     qmlRegisterSingletonInstance(TelemetryController, QML_URI, 1, 0, "Telemetry", telemetry)
     qmlRegisterSingletonInstance(ChronoController, QML_URI, 1, 0, "Chrono", chrono)
     qmlRegisterSingletonInstance(ChartController, QML_URI, 1, 0, "Chart", charts)
+    qmlRegisterSingletonInstance(LayoutController, QML_URI, 1, 0, "Layout", layout)
     qmlRegisterSingletonInstance(SettingsController, QML_URI, 1, 0, "Settings", settings)
     qmlRegisterSingletonInstance(TripsController, QML_URI, 1, 0, "Trips", trips)
 
     engine = QQmlApplicationEngine()
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
-    return engine, [theme, info, telemetry, chrono, chronometer, charts, settings, recorder, trips]
+    return engine, [
+        theme,
+        info,
+        telemetry,
+        chrono,
+        chronometer,
+        charts,
+        settings,
+        recorder,
+        trips,
+        layout,
+    ]
 
 
 def main() -> int:

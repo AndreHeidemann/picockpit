@@ -1,315 +1,334 @@
 # PiCockpit OS
 
-Plataforma automotiva modular para Raspberry Pi 5: painel digital, Android Auto,
-OBD-II/CAN e sistema de widgets, construida como produto de longa vida.
+Painel digital automotivo para Raspberry Pi 5. Telemetria em tempo real,
+histórico de viagens, cronômetros de desempenho e temas visuais — construído
+para rodar a 60 fps no hardware final, não numa máquina de desenvolvimento.
 
-O desenvolvimento tem duas trilhas complementares:
-
-| Trilha | Onde roda | O que cobre |
-| --- | --- | --- |
-| Backend / dominio | Docker no PC (`python:3.11-bookworm`) | `core`, `services`, `simulation`, `data`, testes, lint |
-| UI e hardware | Raspberry Pi 5 real | Qt/QML, FPS, GPU, OBD/CAN/serial, camera |
-
-A UI **nunca** roda em container. Arquitetura x86 e ausencia de aceleracao de GPU
-tornariam qualquer medicao de performance enganosa, e validar performance no
-hardware final e um objetivo do projeto.
+Veículo de referência: **Ford Ka 1.0 Ti-VCT flex**.
 
 ---
 
-## Etapa 0 - Ambiente remoto validado
+## O que já funciona
 
-Levantamento feito via shell remoto do Raspberry Pi Connect em 2026-08-05.
-
-| Item | Valor |
+| Recurso | Estado |
 | --- | --- |
-| Dispositivo | `raspberry5andreheidemann` (`raspberrypi5-heidemann`) |
-| Modelo | Raspberry Pi 5 rev 1.1, 8 GB |
-| Sistema | Raspberry Pi OS 12 (Bookworm), Debian 12, `aarch64` |
-| glibc | 2.36 |
-| Python do sistema | 3.11.2 |
-| Sessao grafica | Wayland, compositor `labwc` (`WAYLAND_DISPLAY=wayland-0`, Xwayland em `:0`) |
-| GPU | `/dev/dri/card0`, `card1`, `renderD128` (V3D) |
-| Display | HDMI-A-1, 1920x1080 @ 60 Hz (preferido e ativo) |
-| Armazenamento | Cartao SD 59,5 GB, 79% ocupado |
-| Connect client | 2.12.2, screen sharing e remote shell habilitados |
-
-### Como abrir a sessao de visualizacao
-
-1. Acesse <https://connect.raspberrypi.com/devices>.
-2. Em `raspberry5andreheidemann`, use **Connect via > Screen sharing**.
-3. Para o shell remoto, o mesmo menu oferece **Remote shell** (util quando o SSH
-   local nao estiver a mao).
-
-O SSH continua sendo o canal principal para comandos e transferencia de
-arquivos; o Connect e o canal de visualizacao.
-
-### Como trocar a resolucao do display
-
-A sessao e Wayland com `labwc`, entao `xrandr` nao se aplica. Use `wlr-randr`:
-
-```bash
-wlr-randr                                    # lista saidas e modos
-wlr-randr --output HDMI-A-1 --mode 1920x1080@60
-wlr-randr --output HDMI-A-1 --mode 1280x800@60    # ensaio de tela automotiva
-```
-
-Telas automotivas costumam ser widescreen (1280x480, 1920x720) ou quadradas.
-Para fixar um modo entre reboots, use `~/.config/labwc/autostart` ou os
-parametros `video=HDMI-A-1:<modo>` em `/boot/firmware/cmdline.txt`.
+| Painel digital com mostradores segmentados | pronto, 60 fps no Pi 5 |
+| Simulador com física coerente (Ford Ka 1.0) | pronto |
+| Consumo instantâneo, autonomia, marcha, hodômetro | pronto |
+| Cronômetro 0–100 km/h e de volta | pronto |
+| Gráficos em tempo real (janela de 60 s) | pronto |
+| Histórico de viagens em SQLite | pronto |
+| 5 temas com geometria própria | pronto |
+| Unidades métrico e imperial | pronto |
+| Injeção de falhas OBD-II para testes | pronto |
+| Serviço systemd com kiosk e watchdog | pronto |
+| OBD-II real, Android Auto, tela dividida | planejado |
 
 ---
 
-## Etapa 0.5 - Ambiente Docker local (backend)
+## Instalação no Raspberry Pi
 
-Pre-requisito: Docker Desktop com backend WSL2.
+### Requisitos
 
-```bash
-cd ~/picockpit
-make build      # constroi a imagem
-make up         # sobe o container em background
-make test       # pytest dentro do container
-make lint       # ruff + black --check
-make fmt        # aplica correcoes
-make sh         # shell no container
-```
+- Raspberry Pi 5 com Raspberry Pi OS 12 (Bookworm), 64 bits
+- Sessão gráfica ativa (Wayland/labwc, o padrão do sistema)
+- Python 3.11, o que já vem no sistema
+- Acesso por SSH ou pelo shell remoto do Raspberry Pi Connect
 
-O codigo e montado por bind mount: editar no host reflete imediatamente no
-container, sem rebuild.
-
-Este ambiente cobre **apenas** logica de dominio. Nada aqui mede FPS, valida
-QML ou toca hardware; isso e sempre no Pi.
-
----
-
-## Etapa 1 - Infraestrutura e UI base
-
-### Preparar o Pi (uma vez)
+### Passo a passo
 
 ```bash
-# no Pi
-git clone ~/picockpit.git ~/picockpit
+# 1. Clonar
+git clone https://github.com/<seu-usuario>/picockpit.git ~/picockpit
+
+# 2. Criar o ambiente virtual e instalar as dependencias
 ~/picockpit/scripts/setup_pi.sh
-```
 
-### Enviar codigo do PC para o Pi
-
-O Pi hospeda um repositorio bare em `~/picockpit.git`, que funciona como remote.
-
-```bash
-# no WSL, uma vez
-git remote add pi ssh://andreheidemann@192.168.1.54/home/andreheidemann/picockpit.git
-
-# a cada ciclo
-git push pi HEAD:refs/heads/main
-ssh andreheidemann@192.168.1.54 'cd ~/picockpit && git pull'
-```
-
-### Executar
-
-```bash
-# no Pi, por SSH ou pelo shell remoto do Connect
+# 3. Rodar
 ~/picockpit/scripts/run_pi.sh
 ```
 
-O script exporta `XDG_RUNTIME_DIR`, `WAYLAND_DISPLAY` e `DISPLAY` porque uma
-conexao SSH nao herda a sessao grafica do usuario, e escolhe
-`QT_QPA_PLATFORM="wayland;xcb"` - Wayland nativo quando o socket existe, com
-Xwayland como fallback automatico.
+Deve abrir uma janela de 1280x480 com o painel funcionando sobre o simulador.
+`F11` alterna tela cheia, `Ctrl+Q` encerra.
 
-Atalhos: `F11` alterna tela cheia (ensaio de kiosk sem systemd), `Ctrl+Q` encerra.
+> **PySide6 fica fixo na 6.8.0.2.** As wheels `aarch64` a partir da 6.8.1 exigem
+> glibc 2.39 e o Raspberry Pi OS 12 tem 2.36. A 6.8.0.2 é a última compatível, e
+> coincide com o ciclo LTS do Qt 6.8. Ver [Decisões técnicas](#decisões-técnicas).
 
-### Medicao de FPS
+### Instalar como serviço (opcional)
 
-O medidor da barra superior reporta ao Python, que agrega e grava no log. Fica
-em nivel DEBUG porque uma linha a cada 5 s significaria escrita continua no
-cartao SD.
+Para o painel subir sozinho com o sistema, em tela cheia, e voltar sozinho se
+cair:
 
 ```bash
-PICOCKPIT_LOG_LEVEL=DEBUG ~/picockpit/scripts/run_pi.sh
-grep 'FPS janela' ~/picockpit/logs/picockpit.log
+~/picockpit/scripts/install_service.sh
+systemctl --user start picockpit
 ```
 
-Medido em 2026-08-05, painel da Etapa 3 animado, janela de 65 s:
-**60,0 fps de media, minimo 59** - identico com e sem a sessao de screen
-sharing aberta. A codificacao de video do Raspberry Pi Connect nao custou FPS
-mensuravel nesta carga.
-
-### Analise estatica do QML
+Comandos do dia a dia:
 
 ```bash
-# no Pi
+systemctl --user status picockpit    # estado
+systemctl --user stop picockpit      # para, gravando a viagem em andamento
+systemctl --user restart picockpit   # reinicia
+tail -f "$XDG_RUNTIME_DIR"/picockpit/logs/picockpit.log
+```
+
+---
+
+## Desenvolvimento
+
+O projeto tem duas trilhas complementares:
+
+| Trilha | Onde roda | O que cobre |
+| --- | --- | --- |
+| Backend e domínio | Docker no PC (`python:3.11-bookworm`) | `core`, `services`, `simulation`, `data`, testes, lint |
+| Interface e hardware | Raspberry Pi 5 real | Qt/QML, FPS, GPU, OBD/CAN/serial, câmera |
+
+A interface **nunca** roda em container. Arquitetura x86 e ausência de aceleração
+de GPU tornariam qualquer medição de performance enganosa, e validar performance
+no hardware final é um objetivo do projeto.
+
+### Trilha rápida (Docker, sem Raspberry Pi)
+
+Requer Docker Desktop com backend WSL2, ou Docker em Linux.
+
+```bash
+make build      # constroi a imagem
+make up         # sobe o container
+make test       # pytest dentro do container
+make lint       # ruff + black --check
+make fmt        # aplica as correcoes
+make sh         # shell no container
+```
+
+O código é montado por bind mount: editar no host reflete no container sem
+rebuild. Esta trilha cobre **apenas** lógica de domínio — nada aqui mede FPS,
+valida QML ou toca hardware.
+
+Para ver o simulador funcionando sem interface gráfica:
+
+```bash
+docker compose exec backend python scripts/simulate.py 20 3
+```
+
+```
+      speed |   rpm | gear | throttle | consumption | fuel_rate | range
+        0.0 |   850 |    0 |      0.0 |         0.0 |       0.8 | 546.0
+       22.3 |  2964 |    1 |     58.8 |         3.2 |       6.9 | 531.2
+       75.6 |  2597 |    4 |     55.2 |        18.4 |       3.5 | 514.3
+```
+
+### Enviar código do PC para o Pi
+
+O Pi hospeda um repositório bare que funciona como remote de deploy:
+
+```bash
+# uma vez, no Pi
+git init --bare ~/picockpit.git
+
+# uma vez, no PC
+git remote add pi ssh://<usuario>@<ip-do-pi>/home/<usuario>/picockpit.git
+
+# a cada ciclo
+git push pi HEAD:refs/heads/main
+ssh <usuario>@<ip-do-pi> 'cd ~/picockpit && git pull'
+```
+
+### Qualidade
+
+```bash
+# no container ou no Pi
+pytest
+ruff check picockpit tests scripts
+black --check picockpit tests scripts
+
+# somente no Pi: analise estatica do QML
 ~/picockpit/scripts/lint_qml.sh
 ```
 
-O QML degrada em silencio: propriedade inexistente vira aviso em tempo de
-execucao, as vezes apontando para a linha errada. O `qmllint` pega isso antes.
+Testes marcados com `@pytest.mark.ui` exigem PySide6 e são pulados fora do Pi.
+Os marcados com `@pytest.mark.hardware` exigem OBD, CAN ou serial reais.
 
-A janela abre em 1280x480, proporcao comum de tela automotiva widescreen.
-O contador de FPS na barra superior mede frames realmente renderizados e serve
-de referencia desde ja para as Etapas 3 e 4.
-
----
-
-## Etapa 2 - Simulador
-
-Veiculo de referencia: **Ford Ka 1.0 Ti-VCT flex**, cambio manual de cinco
-marchas, tanque de 42 L. Os parametros sao aproximacoes de catalogo e serao
-calibrados contra o carro real na Etapa 8.
-
-Telemetria sintetica com coerencia fisica entre os sinais: o acelerador move o
-motor, a transmissao impoe a rotacao a partir da velocidade, a carga aquece o
-liquido de arrefecimento e o fluxo de ar consome combustivel.
-
-Numeros que o modelo produz, conferidos contra o que se espera do carro:
-
-| Grandeza | Modelo | Referencia |
-| --- | --- | --- |
-| 0-100 km/h, gasolina | 14,8 s | ~14,5 s |
-| 0-100 km/h, etanol | 13,7 s | ~13,5 s |
-| Marcha lenta | 0,83 L/h | 0,7 a 1,0 L/h |
-| Cruzeiro leve, 62 km/h | 19,7 km/L | 18 a 20 km/L |
-| 107 km/h | 14,1 km/L | 13 a 15 km/L |
-| Autonomia, tanque cheio | ~600 km | ~550 km |
-
-Etanol rende cerca de 30% menos por litro (estequiometria 9,0 contra 14,7) e
-entrega 7% mais torque - as duas coisas saem do mesmo `FuelProperties`.
-
-```
-DriverProfile  -> acelerador e freio ao longo de um ciclo de conducao
-VehicleModel   -> step(dt) puro: dinamica, cambio, termica e consumo
-SimulationProvider -> implementa TelemetryProvider
-TelemetryService   -> valida, consolida VehicleState e publica no EventBus
-```
-
-Para ver os numeros correndo, sem interface:
-
-```bash
-# no container (WSL)
-docker compose exec backend python scripts/simulate.py 20 3
-
-# ou no Pi
-cd ~/picockpit && PYTHONPATH=. ~/picockpit-venv/bin/python scripts/simulate.py 20 3
-```
-
-O segundo argumento e a escala de tempo: `3` faz o ciclo de conducao correr
-tres vezes mais rapido que o relogio, util para exercitar todas as fases sem
-esperar.
+O `qmllint` existe por um motivo específico: **QML degrada em silêncio**.
+Propriedade inexistente vira aviso em tempo de execução, às vezes apontando para
+a linha errada. Três bugs do projeto foram dessa família — por isso o teste de
+fumaça da interface transforma qualquer aviso do QML em falha.
 
 ---
 
-## Etapa 13 - Producao no Pi
-
-### Instalar como servico
-
-```bash
-# no Pi
-~/picockpit/scripts/install_service.sh
-systemctl --user start picockpit
-journalctl --user -u picockpit -f
-```
-
-E um servico **de usuario**, nao de sistema: a aplicacao precisa do socket
-Wayland, que vive em `/run/user/<uid>` e pertence ao usuario da sessao
-grafica.
-
-`Restart=always` e o watchdog do projeto - se a interface cair, ela volta em
-3 s. `StartLimitBurst=5` evita laco infinito quando a falha e permanente: o
-servico desiste e fica no journal em vez de repetir o mesmo erro para sempre.
-
-`KillSignal=SIGTERM` com `TimeoutStopSec=20` importa mais do que parece: e por
-esse caminho que a viagem em andamento e gravada antes do desligamento.
-
-### Alternar desenvolvimento e producao
-
-O modo kiosk vem da configuracao (`kiosk = true` ou `PICOCKPIT_KIOSK=true`).
-Em desenvolvimento fica desligado, para a janela conviver com o desktop; o
-servico liga por variavel de ambiente. `F11` alterna em tempo de execucao.
-
-```bash
-systemctl --user stop picockpit      # sai de producao
-~/picockpit/scripts/run_pi.sh        # sobe em modo janela
-```
-
-### Atualizar
-
-```bash
-~/picockpit/scripts/update.sh
-```
-
-Faz backup, para o servico, atualiza codigo e dependencias, roda a suite e so
-entao sobe de volta. Atualizacao que executa migracao de banco sem copia de
-seguranca e aposta, nao procedimento.
-
-### Backup e restauracao
-
-```bash
-~/picockpit/scripts/backup.sh
-~/picockpit/scripts/restore.sh ~/picockpit-backups/picockpit-AAAAMMDD-HHMMSS.tar.gz
-```
-
-O banco e copiado pela API de backup do SQLite, nao com `cp`: em modo WAL,
-copiar o arquivo com a aplicacao rodando pode capturar um estado sem as
-transacoes que ainda vivem no journal. O backup mantem os 10 mais recentes -
-cartao cheio derruba a aplicacao inteira.
-
----
-
-## Decisoes tecnicas relevantes
-
-### PySide6 fixado em 6.8.0.2
-
-As wheels `aarch64` do PySide6 a partir da 6.8.1 sao publicadas como
-`manylinux_2_39`, exigindo glibc >= 2.39. O Raspberry Pi OS 12 traz glibc 2.36,
-e o Debian 12 nao empacota PySide6 no apt. A 6.8.0.2 e a ultima wheel
-`manylinux_2_31` e coincide com o ciclo LTS do Qt 6.8 - base estavel para um
-projeto de anos.
-
-Migrar para Raspberry Pi OS Trixie (glibc 2.41, Python 3.13, PySide6 6.11)
-destravaria versoes novas, mas exige reinstalacao limpa do sistema.
-
-PySide6 foi preferido a PyQt6 por licenca: LGPL permite produto proprietario
-sem contrapartida comercial.
-
-### Python 3.11, nao 3.12
-
-O sistema do Pi entrega 3.11.2 e o PySide6 do projeto e instalado por pip
-contra esse interpretador. Compilar um 3.12 paralelo criaria divergencia entre
-as duas trilhas sem beneficio pratico. O container espelha exatamente esse
-ambiente com `python:3.11-bookworm`.
-
-### Estado imutavel e barramento de eventos
-
-`VehicleState` e `Reading` sao imutaveis. A UI sempre recebe um objeto novo, o
-que elimina bugs de mutacao concorrente entre a thread do Qt e as tarefas
-asyncio dos providers. O `EventBus` isola falhas por handler: um widget que
-levanta excecao e registrado no log e ignorado naquele ciclo, sem derrubar o
-velocimetro.
-
-### Cartao SD com 79% de ocupacao
-
-Restam cerca de 12 GB. Persistencia (Etapa 10) e logging em arquivo desgastam
-cartao SD. A recomendacao e migrar o sistema para SSD via USB3 antes da Etapa 10,
-ou ao menos manter o banco e os logs fora do cartao.
-
----
-
-## Estrutura
+## Arquitetura
 
 ```
 picockpit/
-  app/          composicao da aplicacao (wiring)
-  core/         modelos, event bus, config, logging
-  services/     contratos e orquestracao de providers
-  ui/           Qt/QML - nunca importado pelo backend
-  simulation/   telemetria sintetica
-  data/         persistencia SQLite
+  app/          composicao da aplicacao (wiring, ponte asyncio x Qt)
+  core/         modelos, event bus, series, temas, unidades, config, logging
+  services/     contratos de provider, telemetria, cronometros, viagens
+  ui/           controladores Qt e QML, nunca importado pelo backend
+  simulation/   modelo fisico do veiculo, motorista sintetico, falhas
+  data/         SQLite: migracoes, viagens, preferencias
   plugins/      pontos de extensao
-  assets/ themes/
-configs/        configuracao TOML
-docker/         Dockerfile da trilha backend
-tests/unit/     testes de dominio (Docker)
-tests/integration/  testes com UI e hardware (somente no Pi)
-scripts/ deployment/ docs/
+configs/        configuracao de fabrica em TOML
+deployment/     unidade systemd
+scripts/        setup, execucao, lint, backup, atualizacao
+tests/unit/     dominio, roda no Docker
+tests/integration/  interface e hardware, somente no Pi
 ```
 
-Testes marcados com `@pytest.mark.hardware` ou `@pytest.mark.ui` so rodam no Pi.
+O fluxo de dados é sempre o mesmo, e é o que permite trocar a origem sem tocar na
+interface:
+
+```
+Provider  ->  TelemetryService  ->  EventBus  ->  Controllers  ->  QML
+(simulacao,   valida e              desacopla    convertem       exibe
+ OBD, CAN)    consolida                          unidades
+```
+
+`TelemetryProvider` é o contrato único. Trocar simulação por OBD-II na Etapa 8 é
+acrescentar um ramo em `create_provider` — nada acima disso muda.
+
+---
+
+## Decisões técnicas
+
+**PySide6 fixado em 6.8.0.2.** Wheels `aarch64` a partir da 6.8.1 são
+`manylinux_2_39` (glibc >= 2.39); o Raspberry Pi OS 12 tem glibc 2.36. A 6.8.0.2
+é a última `manylinux_2_31` e cai no ciclo LTS do Qt 6.8. Migrar para Raspberry
+Pi OS Trixie destravaria versões novas, ao custo de reinstalação limpa.
+
+**PySide6 e não PyQt6**, por licença: LGPL permite produto proprietário sem
+contrapartida comercial.
+
+**Python 3.11.** É o que o sistema entrega e contra o que o PySide6 é instalado.
+O container espelha exatamente, com `python:3.11-bookworm`.
+
+**Mostradores em `QtQuick.Shapes` com `CurveRenderer`**, nunca `Canvas`. Canvas
+rasteriza na CPU e repinta a textura inteira a cada atualização — no Pi 5 isso
+derruba o FPS. O avanço é quantizado em segmentos inteiros: além de ser o
+comportamento correto de um mostrador segmentado, prende a geometria e evita
+re-tesselar o preenchimento a cada quadro.
+
+**`qasync` para casar asyncio e Qt.** Um laço só — provider, serviços e interface
+vivem na mesma thread, sem fronteira de concorrência para errar.
+
+**Singletons QML registrados antes do engine.** Objetos registrados com
+`qmlRegisterSingletonInstance` pertencem a um único engine, e o registro precisa
+acontecer antes de instanciá-lo. Fora disso o Qt reporta erros que apontam para o
+lugar errado. `build_engine` falha alto se for chamado duas vezes.
+
+**Estado imutável.** `VehicleState` e `Reading` são congelados e a interface
+sempre recebe objeto novo. Elimina uma classe inteira de bugs de mutação
+concorrente entre a thread do Qt e as tarefas assíncronas.
+
+**Unidades convertidas só na borda.** O domínio trabalha sempre em km/h, °C e
+km/L. Guardar valor convertido tornaria o histórico incomparável no dia em que o
+usuário trocasse de sistema. Limiares de alerta comparam sempre em unidade
+canônica: superaquecimento é propriedade do motor, não da unidade exibida.
+
+**Um registro por viagem, não por amostra.** SQLite em modo WAL com
+`synchronous=NORMAL`. No pior caso perde-se a última viagem numa queda de
+energia, o que é barato perto de gastar a vida do cartão SD.
+
+**Log em tmpfs por padrão.** Sem SSD, escrita contínua no cartão é desgaste por
+um dado que quase nunca é lido. Para guardar em disco, defina `PICOCKPIT_LOG_DIR`.
+
+**`SIGTERM` tratado.** É por esse caminho que a viagem em andamento é gravada
+antes do desligamento. Sem isso, `systemctl stop` perderia justamente a viagem que
+acabou de acontecer.
+
+---
+
+## Configuração
+
+Valores de fábrica em `configs/default.toml`. Qualquer um pode ser sobrescrito
+por variável de ambiente com o prefixo `PICOCKPIT_`:
+
+```bash
+PICOCKPIT_LOG_LEVEL=DEBUG PICOCKPIT_KIOSK=true ~/picockpit/scripts/run_pi.sh
+```
+
+| Chave | Padrão | Descrição |
+| --- | --- | --- |
+| `env` | `development` | Ambiente lógico |
+| `log_level` | `INFO` | Nível de log |
+| `log_dir` | tmpfs | Diretório dos logs rotacionados |
+| `provider` | `simulation` | Origem dos dados: `simulation`, `obd`, `can` |
+| `target_fps` | `60` | Alvo de quadros |
+| `sample_interval_ms` | `50` | Intervalo de amostragem |
+| `database_path` | `data/picockpit.db` | Banco SQLite |
+| `theme` | `normal` | Tema inicial |
+| `kiosk` | `false` | Tela cheia sem decoração |
+
+O que o usuário muda na tela de Ajustes é guardado no banco e **tem precedência**
+sobre o arquivo.
+
+### Medir FPS
+
+O medidor da barra superior reporta ao Python, que agrega e grava em nível DEBUG:
+
+```bash
+PICOCKPIT_LOG_LEVEL=DEBUG ~/picockpit/scripts/run_pi.sh
+grep 'FPS janela' "$XDG_RUNTIME_DIR"/picockpit/logs/picockpit.log
+```
+
+Medição de 2026-08-06, painel animado, janela de 65 s: **60,0 fps de média,
+mínimo 59** — idêntico com e sem a sessão de screen sharing aberta.
+
+---
+
+## Backup e atualização
+
+```bash
+~/picockpit/scripts/backup.sh       # banco e configs, mantem os 10 mais recentes
+~/picockpit/scripts/update.sh       # backup, pull, dependencias, testes, restart
+~/picockpit/scripts/restore.sh <arquivo.tar.gz>
+```
+
+O banco é copiado pela API de backup do SQLite, não com `cp`: em modo WAL, copiar
+o arquivo com a aplicação rodando pode capturar um estado sem as transações que
+ainda vivem no journal.
+
+---
+
+## Acesso remoto
+
+O desenvolvimento acontece por SSH para comandos e **Raspberry Pi Connect** para
+visualização.
+
+1. Acesse <https://connect.raspberrypi.com/devices>
+2. No dispositivo, use **Connect via → Screen sharing**, ou **Remote shell**
+
+A sessão é Wayland com `labwc`, então `xrandr` não se aplica. Para trocar a
+resolução:
+
+```bash
+wlr-randr                                       # lista saidas e modos
+wlr-randr --output HDMI-A-1 --mode 1280x800@60  # ensaio de tela automotiva
+```
+
+---
+
+## Roadmap
+
+| Etapa | Situação |
+| --- | --- |
+| 0 — Validação do acesso remoto | concluída |
+| 0.5 — Ambiente Docker local | concluída |
+| 1 — Infraestrutura e UI base | concluída |
+| 2 — Simulador | concluída |
+| 3 — Painel digital | concluída |
+| 3.5 — Cronômetros e gráficos | concluída |
+| 4 — Temas | concluída |
+| 10 — Persistência | concluída |
+| 12 — Configurações | concluída |
+| 13 — Produção e watchdog | concluída |
+| 5 — Android Auto | planejada |
+| 6 — Tela dividida | planejada |
+| 7 — Widgets | planejada |
+| 8 — OBD-II e CAN reais | planejada, depende do veículo |
+
+---
+
+## Licença
+
+Projeto proprietário. PySide6 é usado sob LGPL, sem modificação da biblioteca.

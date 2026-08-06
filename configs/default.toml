@@ -1,7 +1,11 @@
 # Configuracao base. Variaveis PICOCKPIT_* sobrescrevem qualquer valor daqui.
 env = "development"
 log_level = "INFO"
-log_dir = "logs"
+
+# log_dir nao e definido de proposito: sem SSD, o padrao aponta para tmpfs
+# (XDG_RUNTIME_DIR) e nao gasta escrita do cartao SD. Para guardar em disco,
+# defina PICOCKPIT_LOG_DIR ou descomente a linha abaixo.
+# log_dir = "logs"
 
 # Provider ativo: simulation | obd | can
 provider = "simulation"

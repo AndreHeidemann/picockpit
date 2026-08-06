@@ -12,13 +12,34 @@ try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - apenas em ambientes 3.10
     import tomli as tomllib  # type: ignore[no-redef]
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 #: Prefixo das variaveis de ambiente que sobrescrevem o arquivo de config.
 ENV_PREFIX = "PICOCKPIT_"
 
 DEFAULT_CONFIG_PATH = Path("configs/default.toml")
+
+
+def default_log_dir() -> Path:
+    """Diretorio de log padrao, preferindo memoria a cartao SD.
+
+    O Raspberry Pi roda em cartao SD, que tem numero limitado de escritas. Log
+    de aplicacao e o tipo de dado que se escreve o tempo todo e se le quase
+    nunca - manter no cartao troca vida util por conveniencia. Em
+    ``XDG_RUNTIME_DIR``, que e tmpfs, a escrita nao toca o cartao; o preco e
+    que o log se perde no reinicio.
+
+    Diagnostico que precisa sobreviver a um reboot deve ir para o banco ou
+    para um destino explicito via ``PICOCKPIT_LOG_DIR``.
+
+    Returns:
+        Caminho do diretorio de log.
+    """
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime and Path(runtime).is_dir():
+        return Path(runtime) / "picockpit" / "logs"
+    return Path("/tmp/picockpit-logs")
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,7 +49,8 @@ class AppConfig:
     Attributes:
         env: Ambiente logico (``development`` ou ``production``).
         log_level: Nivel de log raiz.
-        log_dir: Diretorio dos arquivos de log rotacionados.
+        log_dir: Diretorio dos arquivos de log rotacionados. Por padrao em
+            tmpfs, para nao gastar o cartao SD.
         provider: Provider de telemetria ativo.
         target_fps: Taxa de atualizacao alvo da UI, validada apenas no Pi real.
         sample_interval_ms: Intervalo de amostragem dos providers.
@@ -41,7 +63,7 @@ class AppConfig:
 
     env: str = "development"
     log_level: str = "INFO"
-    log_dir: Path = Path("logs")
+    log_dir: Path = field(default_factory=default_log_dir)
     provider: str = "simulation"
     target_fps: int = 60
     sample_interval_ms: int = 50

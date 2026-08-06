@@ -1,5 +1,6 @@
 """Testes do carregamento de configuracao."""
 
+import os
 from pathlib import Path
 
 from picockpit.core.config import AppConfig, load_config
@@ -57,3 +58,40 @@ def test_kiosk_reads_boolean_words_from_the_environment() -> None:
     for value in ("false", "0", "no", ""):
         config = load_config(path=Path("nao-existe.toml"), env={"PICOCKPIT_KIOSK": value})
         assert config.kiosk is False, value
+
+
+def test_log_dir_defaults_to_tmpfs_when_available(tmp_path: Path) -> None:
+    """Sem SSD, log nao pode morar no cartao SD por padrao."""
+    from picockpit.core.config import default_log_dir
+
+    runtime = tmp_path / "run"
+    runtime.mkdir()
+    original = os.environ.get("XDG_RUNTIME_DIR")
+    os.environ["XDG_RUNTIME_DIR"] = str(runtime)
+    try:
+        assert default_log_dir() == runtime / "picockpit" / "logs"
+    finally:
+        if original is None:
+            del os.environ["XDG_RUNTIME_DIR"]
+        else:
+            os.environ["XDG_RUNTIME_DIR"] = original
+
+
+def test_log_dir_falls_back_without_runtime_dir() -> None:
+    from picockpit.core.config import default_log_dir
+
+    original = os.environ.pop("XDG_RUNTIME_DIR", None)
+    try:
+        assert default_log_dir() == Path("/tmp/picockpit-logs")
+    finally:
+        if original is not None:
+            os.environ["XDG_RUNTIME_DIR"] = original
+
+
+def test_log_dir_can_still_be_forced_by_environment(tmp_path: Path) -> None:
+    config = load_config(
+        path=Path("nao-existe.toml"),
+        env={"PICOCKPIT_LOG_DIR": str(tmp_path / "diagnostico")},
+    )
+
+    assert config.log_dir == tmp_path / "diagnostico"

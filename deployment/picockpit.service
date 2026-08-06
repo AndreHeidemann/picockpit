@@ -20,6 +20,9 @@ WorkingDirectory=%h/picockpit
 Environment=PICOCKPIT_ENV=production
 Environment=PICOCKPIT_KIOSK=true
 Environment=PICOCKPIT_LOG_LEVEL=INFO
+# Log em tmpfs: sem SSD, escrita continua no cartao SD e desgaste por um
+# dado que quase nunca e lido. %t expande para XDG_RUNTIME_DIR.
+Environment=PICOCKPIT_LOG_DIR=%t/picockpit/logs
 # Invocado via bash de proposito: o repositorio pode ter vindo de um clone
 # em filesystem que nao preserva o bit de execucao, e ExecStart direto
 # falharia com 203/EXEC - erro que nao diz nada sobre a causa.

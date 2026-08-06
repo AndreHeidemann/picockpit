@@ -1,7 +1,9 @@
 """Configuracao de logging com console e arquivo rotacionado.
 
-Escrita em arquivo e opcional porque o Pi roda em cartao SD, cuja vida util
-sofre com log volumoso. Em producao o alvo preferencial e um SSD via USB3.
+O destino padrao fica em tmpfs (ver ``core.config.default_log_dir``): o Pi
+roda em cartao SD, e log e o dado que mais se escreve e menos se le. A rotacao
+mantem no maximo 4 MB, o suficiente para diagnosticar a sessao corrente sem
+ocupar memoria a toa.
 """
 
 from __future__ import annotations
@@ -18,8 +20,8 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 def setup_logging(
     level: str = "INFO",
     log_dir: Path | None = None,
-    max_bytes: int = 2 * 1024 * 1024,
-    backup_count: int = 5,
+    max_bytes: int = 1024 * 1024,
+    backup_count: int = 3,
 ) -> logging.Logger:
     """Configura o logger raiz de forma idempotente.
 

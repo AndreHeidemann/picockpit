@@ -81,6 +81,49 @@ QML ou toca hardware; isso e sempre no Pi.
 
 ---
 
+## Etapa 1 - Infraestrutura e UI base
+
+### Preparar o Pi (uma vez)
+
+```bash
+# no Pi
+git clone ~/picockpit.git ~/picockpit
+~/picockpit/scripts/setup_pi.sh
+```
+
+### Enviar codigo do PC para o Pi
+
+O Pi hospeda um repositorio bare em `~/picockpit.git`, que funciona como remote.
+
+```bash
+# no WSL, uma vez
+git remote add pi ssh://andreheidemann@192.168.1.54/home/andreheidemann/picockpit.git
+
+# a cada ciclo
+git push pi HEAD:refs/heads/main
+ssh andreheidemann@192.168.1.54 'cd ~/picockpit && git pull'
+```
+
+### Executar
+
+```bash
+# no Pi, por SSH ou pelo shell remoto do Connect
+~/picockpit/scripts/run_pi.sh
+```
+
+O script exporta `XDG_RUNTIME_DIR`, `WAYLAND_DISPLAY` e `DISPLAY` porque uma
+conexao SSH nao herda a sessao grafica do usuario, e escolhe
+`QT_QPA_PLATFORM="wayland;xcb"` - Wayland nativo quando o socket existe, com
+Xwayland como fallback automatico.
+
+Atalhos: `F11` alterna tela cheia (ensaio de kiosk sem systemd), `Ctrl+Q` encerra.
+
+A janela abre em 1280x480, proporcao comum de tela automotiva widescreen.
+O contador de FPS na barra superior mede frames realmente renderizados e serve
+de referencia desde ja para as Etapas 3 e 4.
+
+---
+
 ## Decisoes tecnicas relevantes
 
 ### PySide6 fixado em 6.8.0.2

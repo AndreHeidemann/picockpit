@@ -14,10 +14,9 @@ authors = [{ name = "Andre Heidemann" }]
 # Runtime headless (roda no Docker local e no Pi).
 # A camada de UI e os drivers de hardware ficam em extras, porque
 # o container de backend nao pode depender de Qt nem de SocketCAN.
-dependencies = [
-    "pydantic>=2.7,<3",
-    "structlog>=24.1",
-]
+# O nucleo headless roda apenas com a biblioteca padrao. Dependencias novas
+# so entram aqui quando houver uso real, para manter leve o que sobe no Pi.
+dependencies = []
 
 [project.optional-dependencies]
 ui = [
@@ -43,6 +42,11 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = ["picockpit*"]
+
+[tool.setuptools.package-data]
+# QML acompanha o pacote para que a UI funcione tambem instalada, nao so
+# rodando a partir da arvore de fontes.
+"picockpit.ui" = ["qml/*.qml", "qml/**/*.qml"]
 
 [tool.black]
 line-length = 100

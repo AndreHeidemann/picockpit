@@ -105,3 +105,27 @@ def test_commands_before_connecting_fail_loudly() -> None:
         provider.inject_fault("P0301")
     with pytest.raises(ProviderError):
         provider.clear_faults()
+
+
+def test_fuel_can_be_read_before_connecting() -> None:
+    """Consultar o combustivel e configuracao, nao estado de conexao.
+
+    Amarrar as duas coisas quebrava a tela de ajustes na inicializacao, antes
+    de o provider conectar.
+    """
+    assert SimulationProvider().fuel() == FuelKind.GASOLINE.value
+
+
+def test_fuel_can_be_chosen_before_connecting() -> None:
+    provider = SimulationProvider()
+    provider.set_fuel("ethanol")
+
+    assert provider.fuel() == "ethanol"
+
+
+async def test_fuel_chosen_before_connecting_is_applied_on_connect() -> None:
+    provider = SimulationProvider()
+    provider.set_fuel("ethanol")
+    await provider.connect()
+
+    assert provider.model.spec.fuel is FuelKind.ETHANOL

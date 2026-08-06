@@ -45,11 +45,18 @@ class SimulationProvider(TelemetryProvider):
     _clock_s: float = 0.0
 
     def __post_init__(self) -> None:
-        """Valida os parametros de amostragem."""
+        """Valida os parametros e garante uma especificacao de veiculo.
+
+        A especificacao existe desde a construcao, e nao a partir do
+        ``connect``: perguntar qual e o combustivel e uma consulta de
+        configuracao, nao de estado de conexao. Amarrar as duas coisas fazia a
+        tela de ajustes quebrar na inicializacao, antes de o provider conectar.
+        """
         if self.sample_interval_s <= 0.0:
             raise ValueError("sample_interval_s deve ser positivo")
         if self.time_scale <= 0.0:
             raise ValueError("time_scale deve ser positivo")
+        self.spec = self.spec or VehicleSpec()
 
     @property
     def is_connected(self) -> bool:
@@ -69,7 +76,7 @@ class SimulationProvider(TelemetryProvider):
 
     async def connect(self) -> None:
         """Instancia o modelo e o motorista sintetico."""
-        self._model = VehicleModel(spec=self.spec or VehicleSpec())
+        self._model = VehicleModel(spec=self.spec)
         self.driver = self.driver or DriverProfile()
         self.faults = self.faults or FaultInjector()
         self._clock_s = 0.0
@@ -93,7 +100,7 @@ class SimulationProvider(TelemetryProvider):
 
     def fuel(self) -> str:
         """Combustivel em uso pelo veiculo simulado."""
-        return self.model.spec.fuel.value
+        return self.spec.fuel.value if self.spec else ""
 
     def set_fuel(self, fuel: str) -> None:
         """Troca o combustivel preservando o estado do veiculo.
@@ -114,9 +121,15 @@ class SimulationProvider(TelemetryProvider):
         except ValueError as error:
             raise ProviderError(f"Combustivel desconhecido: {fuel}") from error
 
-        current = self.model
+        self.spec = replace(self.spec, fuel=kind) if self.spec else VehicleSpec(fuel=kind)
+
+        if self._model is None:
+            logger.info("Combustivel definido como %s antes de conectar", kind.value)
+            return
+
+        current = self._model
         self._model = VehicleModel(
-            spec=replace(current.spec, fuel=kind),
+            spec=self.spec,
             speed_ms=current.speed_ms,
             rpm=current.rpm,
             gear=current.gear,

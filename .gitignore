@@ -11,6 +11,8 @@ htmlcov/
 build/
 dist/
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 logs/
 .mount_test

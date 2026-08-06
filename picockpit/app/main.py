@@ -150,6 +150,7 @@ def main() -> int:
         Codigo de saida do processo.
     """
     import asyncio
+    import signal
 
     import qasync
 
@@ -196,6 +197,14 @@ def main() -> int:
     with loop:
         task = loop.create_task(service.run())
         app.aboutToQuit.connect(task.cancel)
+
+        # Sem tratar SIGTERM, `systemctl stop` mataria o processo direto e a
+        # viagem em andamento nunca seria gravada - justamente a viagem que
+        # acabou de acontecer. Encaminhando para o quit do Qt, o encerramento
+        # segue o mesmo caminho de fechar a janela.
+        for signal_number in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(signal_number, app.quit)
+
         loop.run_forever()
 
         # Encerra a viagem em andamento antes de fechar o laco: sem isso, um

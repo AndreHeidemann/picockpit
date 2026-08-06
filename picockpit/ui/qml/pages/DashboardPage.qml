@@ -15,7 +15,14 @@ import PiCockpit 1.0
 Item {
     id: dashboard
 
-    readonly property real sideGaugeSize: Math.min(height * 0.74, 290)
+    // Em tela dividida o painel recebe uma fracao da largura. Sem regra de
+    // adaptacao, a faixa de leituras secundarias passa por cima das barras
+    // laterais - foi o que aconteceu na primeira montagem com 70/30.
+    readonly property bool compact: width < 860
+    readonly property bool veryCompact: width < 640
+
+    readonly property real sideGaugeSize: Math.min(
+        height * (compact ? 0.62 : 0.74), compact ? 220 : 290)
 
     // Escala de mostrador tambem e unidade: converter so o valor faz o
     // ponteiro saturar contra uma regua que ficou em outra medida.
@@ -95,7 +102,10 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Math.round(Telemetry.speed)
             color: Theme.colors.text
-            font { pixelSize: Math.round(dashboard.height * 0.32); weight: Font.Light }
+            font {
+                pixelSize: Math.round(dashboard.height * (dashboard.compact ? 0.26 : 0.32))
+                weight: Font.Light
+            }
         }
 
         Text {
@@ -135,7 +145,7 @@ Item {
             top: parent.top
             topMargin: 8
         }
-        spacing: 8
+        spacing: dashboard.compact ? 4 : 8
 
         AlertLamp {
             active: Telemetry.milOn
@@ -171,14 +181,15 @@ Item {
         }
     }
 
-    // Faixa de leituras secundarias.
+    // Faixa de leituras secundarias. Fica entre as duas barras e corta o que
+    // nao couber, em vez de sobrepor.
     Row {
         anchors {
             horizontalCenter: parent.horizontalCenter
             bottom: parent.bottom
-            bottomMargin: 46
+            bottomMargin: dashboard.compact ? 52 : 46
         }
-        spacing: 22
+        spacing: dashboard.compact ? 14 : 22
 
         InfoCell {
             label: qsTr("AUTONOMIA")
@@ -187,6 +198,7 @@ Item {
         }
 
         InfoCell {
+            visible: !dashboard.compact
             label: qsTr("AR ADMITIDO")
             value: Telemetry.intakeTemp.toFixed(0) + " °" + Telemetry.temperatureUnit
         }
@@ -198,16 +210,19 @@ Item {
         }
 
         InfoCell {
+            visible: !dashboard.veryCompact
             label: qsTr("CARGA")
             value: Math.round(Telemetry.engineLoad) + " %"
         }
 
         InfoCell {
+            visible: !dashboard.compact
             label: qsTr("COLETOR")
             value: Math.round(Telemetry.map) + " kPa"
         }
 
         InfoCell {
+            visible: !dashboard.veryCompact
             label: qsTr("ACELERADOR")
             value: Math.round(Telemetry.throttle) + " %"
         }
@@ -222,8 +237,13 @@ Item {
     // conta-giros, combustivel sob o consumo. Agrupar por assunto vale mais do
     // que simetria - o olho procura combustivel perto de km/L.
     BarIndicator {
-        anchors { left: parent.left; leftMargin: 28; bottom: parent.bottom; bottomMargin: 14 }
-        width: Math.min(230, dashboard.width * 0.23)
+        anchors {
+            left: parent.left
+            leftMargin: dashboard.compact ? 16 : 28
+            bottom: parent.bottom
+            bottomMargin: 14
+        }
+        width: Math.min(dashboard.compact ? 150 : 230, dashboard.width * 0.22)
 
         value: Telemetry.coolantTemp
         minimum: dashboard.temperatureFloor
@@ -239,8 +259,13 @@ Item {
     }
 
     BarIndicator {
-        anchors { right: parent.right; rightMargin: 28; bottom: parent.bottom; bottomMargin: 14 }
-        width: Math.min(230, dashboard.width * 0.23)
+        anchors {
+            right: parent.right
+            rightMargin: dashboard.compact ? 16 : 28
+            bottom: parent.bottom
+            bottomMargin: 14
+        }
+        width: Math.min(dashboard.compact ? 150 : 230, dashboard.width * 0.22)
 
         value: Telemetry.fuelLevel
         label: qsTr("COMBUSTIVEL")

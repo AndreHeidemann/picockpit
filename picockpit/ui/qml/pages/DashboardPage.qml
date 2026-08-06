@@ -196,21 +196,11 @@ Item {
         }
     }
 
-    // Rodape: combustivel e temperatura do motor.
+    // Rodape. As barras acompanham o arco de cima: temperatura do motor sob o
+    // conta-giros, combustivel sob o consumo. Agrupar por assunto vale mais do
+    // que simetria - o olho procura combustivel perto de km/L.
     BarIndicator {
         anchors { left: parent.left; leftMargin: 28; bottom: parent.bottom; bottomMargin: 14 }
-        width: Math.min(230, dashboard.width * 0.23)
-
-        value: Telemetry.fuelLevel
-        label: qsTr("COMBUSTIVEL")
-        glyph: "⛽"
-        readout: Math.round(Telemetry.fuelLevel) + " %"
-        alert: Telemetry.lowFuel
-        accent: Theme.colors.success
-    }
-
-    BarIndicator {
-        anchors { right: parent.right; rightMargin: 28; bottom: parent.bottom; bottomMargin: 14 }
         width: Math.min(230, dashboard.width * 0.23)
 
         value: Telemetry.coolantTemp
@@ -223,6 +213,18 @@ Item {
         readout: Math.round(Telemetry.coolantTemp) + " / 120 °C"
         alert: Telemetry.overheating
         accent: Theme.colors.warning
+    }
+
+    BarIndicator {
+        anchors { right: parent.right; rightMargin: 28; bottom: parent.bottom; bottomMargin: 14 }
+        width: Math.min(230, dashboard.width * 0.23)
+
+        value: Telemetry.fuelLevel
+        label: qsTr("COMBUSTIVEL")
+        glyph: "⛽"
+        readout: Math.round(Telemetry.fuelLevel) + " %"
+        alert: Telemetry.lowFuel
+        accent: Theme.colors.success
     }
 
     // Codigos de falha, quando houver.

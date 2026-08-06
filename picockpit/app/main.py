@@ -25,6 +25,7 @@ from picockpit.simulation.provider import SimulationProvider
 from picockpit.ui.bridge import AppInfo, ThemeController
 from picockpit.ui.chart_controller import ChartController
 from picockpit.ui.chrono_controller import ChronoController
+from picockpit.ui.settings_controller import SettingsController
 from picockpit.ui.telemetry_controller import TelemetryController
 
 logger = logging.getLogger(__name__)
@@ -66,12 +67,14 @@ def create_provider(app_config: AppConfig) -> TelemetryProvider:
 def build_engine(
     app_config: AppConfig,
     bus: EventBus | None = None,
+    provider: TelemetryProvider | None = None,
 ) -> tuple[QQmlApplicationEngine, list[object]]:
     """Cria o engine QML com a ponte Python ja registrada.
 
     Args:
         app_config: Configuracao efetiva da aplicacao.
         bus: Barramento de eventos. Um novo e criado quando omitido.
+        provider: Fonte de telemetria. Uma nova e criada quando omitida.
 
     Returns:
         O engine e a lista de objetos de ponte, que precisam ser mantidos vivos
@@ -104,6 +107,7 @@ def build_engine(
     chronometer = ChronometerService(event_bus)
     chrono = ChronoController(event_bus, chronometer)
     charts = ChartController(event_bus)
+    settings = SettingsController(provider or create_provider(app_config), event_bus)
 
     # Singletons registrados, e nao context properties: nomes capitalizados em
     # context property nao resolvem de forma confiavel dentro de componentes
@@ -119,10 +123,11 @@ def build_engine(
     qmlRegisterSingletonInstance(TelemetryController, QML_URI, 1, 0, "Telemetry", telemetry)
     qmlRegisterSingletonInstance(ChronoController, QML_URI, 1, 0, "Chrono", chrono)
     qmlRegisterSingletonInstance(ChartController, QML_URI, 1, 0, "Chart", charts)
+    qmlRegisterSingletonInstance(SettingsController, QML_URI, 1, 0, "Settings", settings)
 
     engine = QQmlApplicationEngine()
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
-    return engine, [theme, info, telemetry, chrono, chronometer, charts]
+    return engine, [theme, info, telemetry, chrono, chronometer, charts, settings]
 
 
 def main() -> int:
@@ -158,12 +163,13 @@ def main() -> int:
     asyncio.set_event_loop(loop)
 
     bus = EventBus()
-    engine, bridges = build_engine(app_config, bus)
+    provider = create_provider(app_config)
+    engine, bridges = build_engine(app_config, bus, provider)
     if not engine.rootObjects():
         logger.error("Falha ao carregar Main.qml")
         return 1
 
-    service = TelemetryService(create_provider(app_config), bus)
+    service = TelemetryService(provider, bus)
 
     logger.info(
         "Plataforma Qt: %s | provider: %s | amostragem: %dms",

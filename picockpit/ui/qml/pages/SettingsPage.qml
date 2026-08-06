@@ -1,60 +1,151 @@
-// Ajustes. A tela completa e escopo da Etapa 12; aqui apenas a troca de tema,
-// que ja valida a ponte Python -> QML de ponta a ponta.
+// Ajustes.
+//
+// A tela completa e escopo da Etapa 12. Por ora reune o que ja existe no
+// dominio e ainda nao tinha caminho pela interface: tema, combustivel e
+// injecao de falhas.
 import QtQuick
+import ".."
 import PiCockpit 1.0
 
-Item {
+Flickable {
     id: page
 
+    contentHeight: content.implicitHeight + 48
+    clip: true
+
     Column {
-        anchors { fill: parent; margins: 24 }
-        spacing: 20
+        id: content
 
-        Text {
-            text: qsTr("Tema")
-            color: Theme.colors.text
-            font { pixelSize: 22; weight: Font.DemiBold }
-        }
+        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 24 }
+        spacing: 22
 
-        Row {
-            spacing: 12
+        // ------------------------------------------------------------- tema
+        Column {
+            spacing: 10
 
-            Repeater {
-                model: Theme.available
+            Text {
+                text: qsTr("Tema")
+                color: Theme.colors.text
+                font { pixelSize: 20; weight: Font.DemiBold }
+            }
 
-                delegate: Rectangle {
-                    required property string modelData
+            Row {
+                spacing: 10
 
-                    width: 124
-                    height: 56
-                    radius: 12
-                    color: modelData === Theme.name ? Theme.colors.surface_alt : Theme.colors.surface
-                    border.width: modelData === Theme.name ? 2 : 1
-                    border.color: modelData === Theme.name
-                        ? Theme.colors.primary
-                        : Theme.colors.surface_alt
+                Repeater {
+                    model: Theme.available
 
-                    Behavior on color {
-                        ColorAnimation { duration: 120 }
-                    }
+                    delegate: OptionChip {
+                        required property string modelData
 
-                    Text {
-                        anchors.centerIn: parent
                         text: Theme.labelOf(modelData)
-                        color: modelData === Theme.name ? Theme.colors.text : Theme.colors.text_muted
-                        font { pixelSize: 15; weight: Font.Medium }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: Theme.activate(modelData)
+                        selected: modelData === Theme.name
+                        onActivated: Theme.activate(modelData)
                     }
                 }
             }
         }
 
         Rectangle {
-            width: parent.width
+            width: page.width - 48
+            height: 1
+            color: Theme.colors.surface_alt
+        }
+
+        // ------------------------------------------------------ combustivel
+        Column {
+            spacing: 10
+            visible: Settings.simulationControls
+
+            Text {
+                text: qsTr("Combustivel")
+                color: Theme.colors.text
+                font { pixelSize: 20; weight: Font.DemiBold }
+            }
+
+            Text {
+                text: qsTr("Etanol rende menos por litro e entrega mais torque")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+            }
+
+            Row {
+                spacing: 10
+
+                Repeater {
+                    model: Settings.fuels
+
+                    delegate: OptionChip {
+                        required property string modelData
+
+                        text: Settings.fuelLabel(modelData)
+                        selected: modelData === Settings.fuel
+                        onActivated: Settings.setFuel(modelData)
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            width: page.width - 48
+            height: 1
+            color: Theme.colors.surface_alt
+            visible: Settings.simulationControls
+        }
+
+        // ---------------------------------------------------------- falhas
+        Column {
+            spacing: 10
+            visible: Settings.simulationControls
+
+            Text {
+                text: qsTr("Falhas simuladas")
+                color: Theme.colors.text
+                font { pixelSize: 20; weight: Font.DemiBold }
+            }
+
+            Text {
+                text: qsTr("Provoca codigos de diagnostico para testar os alertas do painel")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+            }
+
+            Flow {
+                width: page.width - 48
+                spacing: 8
+
+                Repeater {
+                    model: Settings.knownCodes
+
+                    delegate: OptionChip {
+                        required property string modelData
+
+                        text: modelData
+                        selected: Settings.faultCodes.indexOf(modelData) >= 0
+                        accent: Theme.colors.warning
+                        onActivated: Settings.injectFault(modelData)
+                    }
+                }
+            }
+
+            Text {
+                visible: Settings.faultCodes.length > 0
+                width: page.width - 48
+                wrapMode: Text.WordWrap
+                text: Settings.codeDescription(Settings.faultCodes[Settings.faultCodes.length - 1])
+                color: Theme.colors.warning
+                font.pixelSize: 12
+            }
+
+            ActionButton {
+                text: qsTr("APAGAR CODIGOS")
+                enabled: Settings.faultCodes.length > 0
+                onActivated: Settings.clearFaults()
+            }
+        }
+
+        Rectangle {
+            width: page.width - 48
             height: 1
             color: Theme.colors.surface_alt
         }

@@ -9,14 +9,14 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from picockpit.core.models import ProviderKind, Reading, Signal
 from picockpit.services.providers import ProviderError, TelemetryProvider
 from picockpit.simulation.driver import DriverProfile
 from picockpit.simulation.faults import FaultInjector
 from picockpit.simulation.model import VehicleModel
-from picockpit.simulation.spec import VehicleSpec
+from picockpit.simulation.spec import FuelKind, VehicleSpec
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,60 @@ class SimulationProvider(TelemetryProvider):
     def fault_codes(self) -> tuple[str, ...]:
         """Codigos de falha injetados no veiculo simulado."""
         return self.faults.codes if self.faults else ()
+
+    @property
+    def supports_simulation_controls(self) -> bool:
+        """A simulacao aceita escolher combustivel e provocar falhas."""
+        return True
+
+    def fuel(self) -> str:
+        """Combustivel em uso pelo veiculo simulado."""
+        return self.model.spec.fuel.value
+
+    def set_fuel(self, fuel: str) -> None:
+        """Troca o combustivel preservando o estado do veiculo.
+
+        Recriar o modelo do zero apagaria nivel de tanque, temperatura e
+        hodometro - o carro pareceria ter sido trocado, nao abastecido com
+        outro combustivel. O que de fato reinicia e a media de consumo, e isso
+        e correto: etanol e gasolina rendem diferente.
+
+        Args:
+            fuel: Identificador do combustivel.
+
+        Raises:
+            ProviderError: Se o combustivel for desconhecido.
+        """
+        try:
+            kind = FuelKind(fuel)
+        except ValueError as error:
+            raise ProviderError(f"Combustivel desconhecido: {fuel}") from error
+
+        current = self.model
+        self._model = VehicleModel(
+            spec=replace(current.spec, fuel=kind),
+            speed_ms=current.speed_ms,
+            rpm=current.rpm,
+            gear=current.gear,
+            coolant_temp_c=current.coolant_temp_c,
+            intake_temp_c=current.intake_temp_c,
+            fuel_l=current.fuel_l,
+            uptime_s=current.uptime_s,
+            odometer_km=current.odometer_km,
+        )
+        logger.info("Combustivel alterado para %s", kind.value)
+
+    def inject_fault(self, code: str) -> None:
+        """Provoca uma falha de diagnostico no veiculo simulado."""
+        if self.faults is None:
+            raise ProviderError("Simulador nao conectado")
+        self.faults.inject(code)
+
+    def clear_faults(self) -> None:
+        """Apaga todas as falhas ativas."""
+        if self.faults is None:
+            raise ProviderError("Simulador nao conectado")
+        self.faults.clear()
 
     def sample(self) -> list[Reading]:
         """Avanca a simulacao em um passo e devolve as leituras do instante.

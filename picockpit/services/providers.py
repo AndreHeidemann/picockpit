@@ -46,6 +46,54 @@ class TelemetryProvider(ABC):
         """
         return ()
 
+    @property
+    def supports_simulation_controls(self) -> bool:
+        """Indica se a fonte aceita comandos que so fazem sentido simulando.
+
+        Escolher o combustivel e provocar uma falha sao acoes sem equivalente
+        num veiculo real: o OBD-II le o que existe, nao inventa. A interface
+        consulta esta propriedade para esconder os controles quando a origem
+        for hardware de verdade.
+        """
+        return False
+
+    def set_fuel(self, fuel: str) -> None:
+        """Troca o combustivel em uso.
+
+        Args:
+            fuel: Identificador do combustivel.
+
+        Raises:
+            NotImplementedError: Quando a fonte nao suporta a troca.
+        """
+        raise NotImplementedError("Esta fonte nao permite escolher o combustivel")
+
+    def fuel(self) -> str:
+        """Combustivel em uso, ou string vazia quando desconhecido."""
+        return ""
+
+    def inject_fault(self, code: str) -> None:
+        """Provoca uma falha de diagnostico.
+
+        Args:
+            code: Codigo OBD-II a ativar.
+
+        Raises:
+            NotImplementedError: Quando a fonte nao suporta injecao.
+        """
+        raise NotImplementedError("Esta fonte nao permite provocar falhas")
+
+    def clear_faults(self) -> None:
+        """Apaga as falhas ativas.
+
+        O provider OBD-II implementara pelo modo 04, que e o mesmo comando que
+        um scanner usa para apagar a luz de injecao.
+
+        Raises:
+            NotImplementedError: Quando a fonte nao suporta a limpeza.
+        """
+        raise NotImplementedError("Esta fonte nao permite apagar falhas")
+
     async def __aenter__(self) -> TelemetryProvider:
         """Conecta ao entrar no contexto assincrono."""
         await self.connect()

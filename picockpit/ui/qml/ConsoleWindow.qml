@@ -27,10 +27,10 @@ Window {
     // Sem decoracao no carro; em bancada a janela continua movel.
     flags: AppInfo.kiosk ? Qt.Window | Qt.FramelessWindowHint : Qt.Window
 
-    // Na bancada, com um monitor so, a janela nasce ao lado do cluster em vez
-    // de sobre ele.
-    x: Display.dual ? 0 : 40
-    y: Display.dual ? 0 : 520
+    // Na bancada, com um monitor so, a janela ocupa a faixa da direita, ao
+    // lado do cluster, em vez de cobri-lo.
+    x: Display.dual || !target ? 0 : target.width - width
+    y: 0
 
     property int currentIndex: 0
 

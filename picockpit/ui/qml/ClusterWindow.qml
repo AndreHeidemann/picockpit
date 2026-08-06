@@ -12,15 +12,27 @@ import "pages"
 Window {
     id: cluster
 
+    readonly property var target: Qt.application.screens[Display.clusterScreen]
+
+    // Com dois displays o cluster ocupa o seu inteiro. Com um so - a bancada -
+    // ele cede a faixa da direita para a multimidia, reproduzindo o arranjo
+    // final numa tela. Deixar o cluster em tela cheia aqui esconderia a outra
+    // janela por baixo, que foi o que aconteceu na primeira montagem.
+    readonly property bool sharing: !Display.dual
+
     // 1280x480 e uma proporcao comum de cluster automotivo widescreen.
-    width: 1280
-    height: 480
+    width: sharing && target
+        ? Math.round(target.width * (1 - Display.consoleFraction))
+        : 1280
+    height: sharing && target ? target.height : 480
+    x: 0
+    y: 0
     visible: true
     color: Theme.colors.background
     title: qsTr("PiCockpit OS - Painel")
 
-    screen: Qt.application.screens[Display.clusterScreen]
-    visibility: AppInfo.kiosk ? Window.FullScreen : Window.Windowed
+    screen: target
+    visibility: AppInfo.kiosk && !sharing ? Window.FullScreen : Window.Windowed
 
     // Barra minima: relogio, FPS e alertas ja vivem dentro do painel.
     Item {

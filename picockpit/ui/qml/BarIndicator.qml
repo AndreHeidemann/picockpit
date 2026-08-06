@@ -14,6 +14,11 @@ Item {
     property bool alert: false
     property color accent: Theme.colors.primary
 
+    // Leitura numerica da mesma grandeza que a barra representa. Sem ela a
+    // barra informa proporcao mas nao valor: da para ver que o tanque esta
+    // pela metade e nao saber se sobrou meia hora ou meio dia de rodagem.
+    property string readout: Math.round(value).toString()
+
     readonly property real fraction: maximum > minimum
         ? Math.max(0, Math.min(1, (value - minimum) / (maximum - minimum)))
         : 0
@@ -39,6 +44,13 @@ Item {
             color: bar.alert ? Theme.colors.danger : Theme.colors.text_muted
             font { pixelSize: 12; weight: Font.Medium; letterSpacing: 1.0 }
         }
+    }
+
+    Text {
+        anchors { right: parent.right; top: parent.top }
+        text: bar.readout
+        color: bar.alert ? Theme.colors.danger : Theme.colors.text
+        font { pixelSize: 14; weight: Font.DemiBold }
     }
 
     Rectangle {

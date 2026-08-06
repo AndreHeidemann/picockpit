@@ -204,6 +204,7 @@ Item {
         value: Telemetry.fuelLevel
         label: qsTr("COMBUSTIVEL")
         glyph: "⛽"
+        readout: Math.round(Telemetry.fuelLevel) + " %"
         alert: Telemetry.lowFuel
         accent: Theme.colors.success
     }
@@ -217,6 +218,9 @@ Item {
         maximum: 120
         label: qsTr("MOTOR")
         glyph: "♨"
+        // Mostra o maximo junto: sem a escala, "92" nao diz se o motor esta
+        // no ponto de operacao ou prestes a ferver.
+        readout: Math.round(Telemetry.coolantTemp) + " / 120 °C"
         alert: Telemetry.overheating
         accent: Theme.colors.warning
     }

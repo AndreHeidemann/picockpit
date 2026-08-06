@@ -25,7 +25,7 @@ Item {
                 delegate: Rectangle {
                     required property string modelData
 
-                    width: 132
+                    width: 124
                     height: 56
                     radius: 12
                     color: modelData === Theme.name ? Theme.colors.surface_alt : Theme.colors.surface
@@ -40,7 +40,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: modelData
+                        text: Theme.labelOf(modelData)
                         color: modelData === Theme.name ? Theme.colors.text : Theme.colors.text_muted
                         font { pixelSize: 15; weight: Font.Medium }
                     }

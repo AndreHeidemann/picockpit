@@ -15,10 +15,10 @@ import PiCockpit 1.0
 Item {
     id: dashboard
 
-    readonly property real sideGaugeSize: Math.min(height * 0.66, 260)
+    readonly property real sideGaugeSize: Math.min(height * 0.74, 290)
 
     // Conta-giros a esquerda.
-    ArcGauge {
+    Gauge {
         anchors {
             left: parent.left
             leftMargin: 28
@@ -32,15 +32,18 @@ Item {
         minimum: 0
         maximum: 7000
         warningFrom: 5500
-        thickness: 11
+        thickness: 20
         label: qsTr("RPM")
         units: "rpm"
+        scaleSteps: 8
+        scaleFactor: 0.001
+        scaleDecimals: 0
     }
 
     // Consumo a direita. Parado, km/L nao tem significado - a conta seria
     // distancia zero sobre combustivel queimado - entao o mostrador troca para
     // consumo horario, que e o que um carro real faz.
-    ArcGauge {
+    Gauge {
         anchors {
             right: parent.right
             rightMargin: 28
@@ -53,11 +56,16 @@ Item {
         value: Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate
         minimum: 0
         maximum: Telemetry.moving ? 25 : 12
-        thickness: 11
+        thickness: 20
         label: qsTr("CONSUMO")
         units: Telemetry.moving ? "km/L" : "L/h"
         valueText: (Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate).toFixed(1)
+        // Espelhado para abrir na direcao do centro, como no conjunto
+        // simetrico de um cluster real.
+        mirrored: true
+        scaleSteps: 6
         accent: Theme.colors.success
+        accentDim: Theme.colors.primary_dim
     }
 
     // Bloco central: velocidade e marcha.

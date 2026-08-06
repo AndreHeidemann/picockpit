@@ -11,7 +11,7 @@ import logging
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from picockpit.core.theme import DEFAULT_THEME, ThemeName, get_palette
+from picockpit.core.theme import DEFAULT_THEME, ThemeName, get_theme
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class ThemeController(QObject):
     def __init__(self, initial: str = DEFAULT_THEME.value, parent: QObject | None = None) -> None:
         """Inicializa o controlador com o tema informado."""
         super().__init__(parent)
-        self._palette = get_palette(initial)
+        self._theme = get_theme(initial)
         self._name = initial
 
     @Property(str, notify=changed)  # type: ignore[operator]
@@ -43,7 +43,29 @@ class ThemeController(QObject):
     @Property("QVariantMap", notify=changed)  # type: ignore[operator]
     def colors(self) -> dict[str, str]:
         """Paleta ativa como mapa consumivel por bindings QML."""
-        return self._palette.to_dict()
+        return self._theme.palette.to_dict()
+
+    @Property(str, notify=changed)  # type: ignore[operator]
+    def label(self) -> str:
+        """Nome do tema ativo como aparece na interface."""
+        return self._theme.label
+
+    @Property(str, notify=changed)  # type: ignore[operator]
+    def gaugeStyle(self) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Geometria do mostrador principal: ``segment`` ou ``arc``."""
+        return self._theme.gauge_style.value
+
+    @Slot(str, result=str)
+    def labelOf(self, name: str) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Nome de exibicao de um tema qualquer.
+
+        Args:
+            name: Identificador do tema.
+
+        Returns:
+            Rotulo correspondente.
+        """
+        return get_theme(name).label
 
     @Property("QStringList", constant=True)  # type: ignore[operator]
     def available(self) -> list[str]:
@@ -57,11 +79,11 @@ class ThemeController(QObject):
         Args:
             name: Nome do tema a ativar.
         """
-        palette = get_palette(name)
-        if palette is self._palette:
+        theme = get_theme(name)
+        if theme is self._theme:
             return
         self._name = name
-        self._palette = palette
+        self._theme = theme
         self.changed.emit()
 
 

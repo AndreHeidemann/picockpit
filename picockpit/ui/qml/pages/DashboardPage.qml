@@ -17,11 +17,17 @@ Item {
 
     readonly property real sideGaugeSize: Math.min(height * 0.74, 290)
 
-    // A escala do mostrador de temperatura acompanha a unidade escolhida:
-    // 20 a 120 C equivalem a 68 a 248 F.
+    // Escala de mostrador tambem e unidade: converter so o valor faz o
+    // ponteiro saturar contra uma regua que ficou em outra medida.
+    // 20 a 120 C equivalem a 68 a 248 F; 30 km/L equivalem a ~70 mpg;
+    // 12 L/h equivalem a ~3,2 gal/h.
     readonly property bool fahrenheit: Telemetry.temperatureUnit === "F"
     readonly property real temperatureFloor: fahrenheit ? 68 : 20
     readonly property real temperatureCeiling: fahrenheit ? 248 : 120
+
+    readonly property bool milesPerGallon: Telemetry.consumptionUnit === "mpg"
+    readonly property real consumptionCeiling: milesPerGallon ? 70 : 30
+    readonly property real fuelRateCeiling: milesPerGallon ? 3.5 : 12
 
     // Conta-giros a esquerda.
     Gauge {
@@ -61,7 +67,7 @@ Item {
 
         value: Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate
         minimum: 0
-        maximum: Telemetry.moving ? 30 : 12
+        maximum: Telemetry.moving ? dashboard.consumptionCeiling : dashboard.fuelRateCeiling
         thickness: 20
         label: qsTr("CONSUMO")
         units: Telemetry.moving ? Telemetry.consumptionUnit : Telemetry.fuelRateUnit

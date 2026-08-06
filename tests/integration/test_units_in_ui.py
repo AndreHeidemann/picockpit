@@ -70,3 +70,35 @@ async def test_switching_units_notifies_the_interface() -> None:
     controller.set_units("imperial")
 
     assert hits
+
+
+async def test_trip_history_follows_the_unit_system() -> None:
+    """O historico converte na leitura; o banco continua metrico."""
+    from picockpit.core.trip import Trip
+    from picockpit.data.database import connect
+    from picockpit.data.trip_repository import TripRepository
+    from picockpit.ui.trips_controller import TripsController
+
+    repository = TripRepository(connect(":memory:"))
+    repository.save(
+        Trip(
+            started_at=1000.0,
+            ended_at=2000.0,
+            duration_s=1000.0,
+            moving_s=900.0,
+            distance_km=100.0,
+            fuel_used_l=10.0,
+            max_speed_kmh=100.0,
+        )
+    )
+
+    controller = TripsController(repository, EventBus())
+    assert controller.trips[0]["distance"] == "100.0 km"
+    assert controller.trips[0]["maxSpeed"] == "100 km/h"
+
+    controller.set_units("imperial")
+    assert controller.trips[0]["distance"] == "62.1 mi"
+    assert controller.trips[0]["maxSpeed"] == "62 mph"
+
+    # O que esta gravado nao muda.
+    assert repository.recent()[0].distance_km == pytest.approx(100.0)

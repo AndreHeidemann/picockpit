@@ -9,7 +9,9 @@ from PySide6.QtCore import Property, QObject, Slot
 from PySide6.QtCore import Signal as QtSignal
 
 from picockpit.core.events import EventBus
+from picockpit.core.models import Signal
 from picockpit.core.trip import Trip
+from picockpit.core.units import UnitSystem, convert
 from picockpit.data.trip_repository import TripRepository
 from picockpit.services.trip_recorder import TOPIC_TRIP_SAVED
 
@@ -25,17 +27,35 @@ def _duration(seconds: float) -> str:
     return f"{minutes} min"
 
 
-def _to_map(trip: Trip) -> dict[str, Any]:
-    """Converte uma viagem no mapa consumido pelo QML."""
+def _to_map(trip: Trip, units: UnitSystem) -> dict[str, Any]:
+    """Converte uma viagem no mapa consumido pelo QML.
+
+    O banco guarda sempre em unidade canonica; a conversao acontece aqui, na
+    leitura, para que o historico continue comparavel depois de o usuario
+    trocar de sistema.
+
+    Args:
+        trip: Viagem gravada.
+        units: Sistema de unidades de exibicao.
+
+    Returns:
+        Mapa com os valores ja formatados.
+    """
+    distance = convert(Signal.ODOMETER, trip.distance_km, units)
+    consumption = convert(Signal.CONSUMPTION, trip.average_consumption_km_l, units)
+    average = convert(Signal.SPEED, trip.average_speed_kmh, units)
+    top = convert(Signal.SPEED, trip.max_speed_kmh, units)
+    fuel = convert(Signal.FUEL_RATE, trip.fuel_used_l, units)
+
     return {
         "id": trip.trip_id or 0,
         "date": time.strftime("%d/%m %H:%M", time.localtime(trip.started_at)),
-        "distance": f"{trip.distance_km:.1f} km",
-        "consumption": f"{trip.average_consumption_km_l:.1f} km/L",
+        "distance": f"{distance.value:.1f} {distance.unit}",
+        "consumption": f"{consumption.value:.1f} {consumption.unit}",
         "duration": _duration(trip.duration_s),
-        "averageSpeed": f"{trip.average_speed_kmh:.0f} km/h",
-        "maxSpeed": f"{trip.max_speed_kmh:.0f} km/h",
-        "fuelUsed": f"{trip.fuel_used_l:.2f} L",
+        "averageSpeed": f"{average.value:.0f} {average.unit}",
+        "maxSpeed": f"{top.value:.0f} {top.unit}",
+        "fuelUsed": f"{fuel.value:.2f} {'gal' if units is UnitSystem.IMPERIAL else 'L'}",
         "faults": list(trip.fault_codes),
     }
 
@@ -60,6 +80,7 @@ class TripsController(QObject):
         """
         super().__init__(parent)
         self._repository = repository
+        self._units = UnitSystem.METRIC
         self._trips: list[dict[str, Any]] = []
         self._totals: dict[str, str] = {}
         self._unsubscribe = bus.subscribe(TOPIC_TRIP_SAVED, self._on_trip_saved)
@@ -84,15 +105,35 @@ class TripsController(QObject):
         """Quantidade de viagens no historico."""
         return len(self._trips)
 
+    def set_units(self, units: str | UnitSystem) -> None:
+        """Troca o sistema de unidades do historico.
+
+        Args:
+            units: Sistema de unidades desejado.
+        """
+        try:
+            system = UnitSystem(units)
+        except ValueError:
+            return
+        if system is self._units:
+            return
+        self._units = system
+        self.refresh()
+
     @Slot()
     def refresh(self) -> None:
         """Recarrega historico e somatorios do banco."""
-        self._trips = [_to_map(trip) for trip in self._repository.recent(HISTORY_LIMIT)]
+        self._trips = [
+            _to_map(trip, self._units) for trip in self._repository.recent(HISTORY_LIMIT)
+        ]
         totals = self._repository.totals()
+        distance = convert(Signal.ODOMETER, totals["distance_km"], self._units)
+        consumption = convert(Signal.CONSUMPTION, totals["average_consumption_km_l"], self._units)
+        fuel = convert(Signal.FUEL_RATE, totals["fuel_used_l"], self._units)
         self._totals = {
-            "distance": f"{totals['distance_km']:.1f} km",
-            "fuel": f"{totals['fuel_used_l']:.1f} L",
-            "consumption": f"{totals['average_consumption_km_l']:.1f} km/L",
+            "distance": f"{distance.value:.1f} {distance.unit}",
+            "fuel": f"{fuel.value:.1f} {'gal' if self._units is UnitSystem.IMPERIAL else 'L'}",
+            "consumption": f"{consumption.value:.1f} {consumption.unit}",
             "duration": _duration(totals["duration_s"]),
         }
         self.changed.emit()

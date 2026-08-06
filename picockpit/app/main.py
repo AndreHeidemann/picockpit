@@ -140,7 +140,9 @@ def build_engine(
     # A troca de unidades acontece na tela de ajustes e precisa alcancar quem
     # formata os valores.
     settings.changed.connect(lambda: telemetry.set_units(settings.units))
+    settings.changed.connect(lambda: trips.set_units(settings.units))
     telemetry.set_units(settings.units)
+    trips.set_units(settings.units)
 
     # Tema tambem e preferencia persistida: a tela grava, o controlador aplica.
     settings.changed.connect(lambda: theme.activate(settings.theme))

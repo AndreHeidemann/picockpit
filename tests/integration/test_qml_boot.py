@@ -107,7 +107,10 @@ def test_only_the_console_is_visible_on_a_single_display(stack: dict) -> None:
     if displays.dual:
         assert cluster.isVisible()
     else:
+        # `visible` sozinho nao basta: em Qt, visibility diferente de Hidden
+        # mostra a janela de qualquer jeito. Verificamos as duas.
         assert not cluster.isVisible()
+        assert cluster.visibility() == cluster.Visibility.Hidden
     assert console.isVisible()
 
 

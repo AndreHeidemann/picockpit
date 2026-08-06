@@ -22,12 +22,20 @@ Window {
     height: target ? target.height : 480
     x: 0
     y: 0
-    visible: Display.dual
     color: Theme.colors.background
     title: qsTr("PiCockpit OS - Painel")
 
     screen: target
-    visibility: AppInfo.kiosk ? Window.FullScreen : Window.Windowed
+
+    // Ocultar precisa passar por `visibility`, e nao por `visible`: em Qt as
+    // duas propriedades estao ligadas, e definir visibility como FullScreen
+    // mostra a janela mesmo com visible false. Foi assim que o cluster
+    // apareceu por baixo da multimidia numa tela so - duas barras de
+    // combustivel na mesma imagem.
+    visibility: !Display.dual
+        ? Window.Hidden
+        : (AppInfo.kiosk ? Window.FullScreen : Window.Windowed)
+    visible: Display.dual
 
     Item {
         id: canvas
@@ -60,7 +68,7 @@ Window {
                 right: parent.right
                 bottom: parent.bottom
             }
-            active: cluster.visible
+            active: Display.dual
             sourceComponent: DashboardPage {}
         }
     }

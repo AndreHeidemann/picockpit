@@ -1,9 +1,13 @@
 // Janela da multimidia: navegacao, ajustes e todo o comando do sistema.
 //
-// Ocupa apenas uma fracao do display. O restante fica para a janela de
-// projecao do CarPlay/Android Auto, posicionada pelo compositor - nenhuma das
-// solucoes de projeccao entrega o video como item Qt que a gente possa ancorar
-// dentro da nossa cena.
+// Com dois displays ocupa apenas uma fracao da tela; o restante fica para a
+// janela de projecao do CarPlay/Android Auto, posicionada pelo compositor -
+// nenhuma das solucoes de projecao entrega o video como item Qt que a gente
+// possa ancorar dentro da nossa cena.
+//
+// Com um display so, esta e a unica janela e ocupa a tela inteira, com o
+// painel como primeira pagina da navegacao. E o arranjo de bancada, e tambem o
+// de uma instalacao com tela unica.
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
@@ -13,9 +17,13 @@ Window {
     id: hub
 
     readonly property var target: Qt.application.screens[Display.consoleScreen]
-    readonly property int targetWidth: target
-        ? Math.round(target.width * Display.consoleFraction)
-        : 420
+
+    // Sozinha na tela, ocupa tudo. Ao lado do cluster, cede a maior parte para
+    // a projecao.
+    readonly property bool solo: !Display.dual
+    readonly property int targetWidth: !target
+        ? 420
+        : (solo ? target.width : Math.round(target.width * Display.consoleFraction))
 
     width: Math.max(320, targetWidth)
     height: target ? target.height : 720
@@ -27,9 +35,7 @@ Window {
     // Sem decoracao no carro; em bancada a janela continua movel.
     flags: AppInfo.kiosk ? Qt.Window | Qt.FramelessWindowHint : Qt.Window
 
-    // Na bancada, com um monitor so, a janela ocupa a faixa da direita, ao
-    // lado do cluster, em vez de cobri-lo.
-    x: Display.dual || !target ? 0 : target.width - width
+    x: 0
     y: 0
 
     property int currentIndex: 0

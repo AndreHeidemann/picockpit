@@ -54,12 +54,14 @@ def stack(qt_app):
         qInstallMessageHandler(previous)
 
     theme, _info, telemetry, chrono = bridges[:4]
+    displays = bridges[-1]
     yield {
         "engine": engine,
         "bus": bus,
         "theme": theme,
         "telemetry": telemetry,
         "chrono": chrono,
+        "displays": displays,
         "problems": problems,
     }
 
@@ -86,6 +88,27 @@ def test_both_windows_are_created(stack: dict) -> None:
 
     assert any("Painel" in title for title in titles), titles
     assert any("Multimidia" in title for title in titles), titles
+
+
+def test_only_the_console_is_visible_on_a_single_display(stack: dict) -> None:
+    """Com uma tela so, o cluster nao aparece.
+
+    Duas janelas dividindo um monitor entregariam um cluster deformado e uma
+    barra estreita demais. Com um display, o painel volta a ser a primeira
+    pagina da janela de multimidia.
+    """
+    from PySide6.QtGui import QGuiApplication
+
+    displays = stack["displays"]
+    windows = {window.title(): window for window in QGuiApplication.allWindows()}
+    cluster = next(window for title, window in windows.items() if "Painel" in title)
+    console = next(window for title, window in windows.items() if "Multimidia" in title)
+
+    if displays.dual:
+        assert cluster.isVisible()
+    else:
+        assert not cluster.isVisible()
+    assert console.isVisible()
 
 
 def test_qml_emits_no_warnings(stack: dict) -> None:

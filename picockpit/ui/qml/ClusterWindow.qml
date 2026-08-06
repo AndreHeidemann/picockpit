@@ -4,6 +4,10 @@
 // motorista olha, nao a que ele opera. Isso nao e imposto por uma flag de
 // janela, e sim pela composicao: o painel nao contem um unico MouseArea. Menu
 // aberto por engano a 100 km/h e um modo de falha que nao pode existir.
+//
+// So existe quando ha dois displays. Com um monitor, o painel volta a ser a
+// primeira pagina da janela de multimidia: dividir uma tela em duas janelas
+// entregaria um cluster deformado e uma barra estreita demais.
 import QtQuick
 import QtQuick.Window
 import PiCockpit 1.0
@@ -14,27 +18,17 @@ Window {
 
     readonly property var target: Qt.application.screens[Display.clusterScreen]
 
-    // Com dois displays o cluster ocupa o seu inteiro. Com um so - a bancada -
-    // ele cede a faixa da direita para a multimidia, reproduzindo o arranjo
-    // final numa tela. Deixar o cluster em tela cheia aqui esconderia a outra
-    // janela por baixo, que foi o que aconteceu na primeira montagem.
-    readonly property bool sharing: !Display.dual
-
-    // 1280x480 e uma proporcao comum de cluster automotivo widescreen.
-    width: sharing && target
-        ? Math.round(target.width * (1 - Display.consoleFraction))
-        : 1280
-    height: sharing && target ? target.height : 480
+    width: target ? target.width : 1280
+    height: target ? target.height : 480
     x: 0
     y: 0
-    visible: true
+    visible: Display.dual
     color: Theme.colors.background
     title: qsTr("PiCockpit OS - Painel")
 
     screen: target
-    visibility: AppInfo.kiosk && !sharing ? Window.FullScreen : Window.Windowed
+    visibility: AppInfo.kiosk ? Window.FullScreen : Window.Windowed
 
-    // Barra minima: relogio, FPS e alertas ja vivem dentro do painel.
     Item {
         id: canvas
 
@@ -57,13 +51,17 @@ Window {
             title: qsTr("Painel")
         }
 
-        DashboardPage {
+        // Carregado apenas quando a janela existe de fato: com um display so,
+        // montar o painel duas vezes seria pagar duas vezes pela mesma cena.
+        Loader {
             anchors {
                 top: topBar.bottom
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
             }
+            active: cluster.visible
+            sourceComponent: DashboardPage {}
         }
     }
 }

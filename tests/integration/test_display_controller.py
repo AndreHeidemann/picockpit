@@ -25,6 +25,16 @@ def build(**kwargs):
     return DisplayController(**kwargs)
 
 
+def screen_size(controller):
+    from PySide6.QtGui import QGuiApplication
+
+    geometry = QGuiApplication.screens()[0].geometry()
+    return geometry.width(), geometry.height()
+
+
+# --------------------------------------------------------------- basicos
+
+
 def test_defaults(qt_app) -> None:
     controller = build()
 
@@ -33,7 +43,7 @@ def test_defaults(qt_app) -> None:
 
 
 def test_screen_index_is_clamped_to_what_exists(qt_app) -> None:
-    """Com um monitor so, o indice cai para o que existe em vez de sumir."""
+    """Indice alem do que existe cai para o ultimo display, em vez de sumir."""
     controller = build(cluster_screen=0, console_screen=9)
 
     assert 0 <= controller.consoleScreen <= controller.screenCount - 1
@@ -57,42 +67,68 @@ def test_same_index_means_sharing_one_screen(qt_app) -> None:
     controller = build(cluster_screen=0, console_screen=0)
 
     assert controller.shared
-    assert controller.dual
 
 
-def test_shared_geometry_covers_the_screen_without_overlap(qt_app) -> None:
+def test_sharing_does_not_create_a_second_window(qt_app) -> None:
+    """Dividindo a tela, o cluster vira regiao e nao janela.
+
+    No Wayland a aplicacao nao escolhe onde a propria janela aparece - isso e
+    prerrogativa do compositor. Duas janelas lado a lado so funcionam quando
+    cada uma tem a sua tela; na mesma tela elas acabam empilhadas.
+    """
+    assert not build(cluster_screen=0, console_screen=0).dual
+
+
+def test_shared_console_takes_the_whole_screen(qt_app) -> None:
+    """Dividindo a tela existe uma janela so, que hospeda as duas regioes."""
     controller = build(cluster_screen=0, console_screen=0, console_fraction=0.3)
-    cluster = controller.clusterGeometry
     console = controller.consoleGeometry
+    width, height = screen_size(controller)
 
-    assert cluster["x"] == 0
-    assert console["x"] == cluster["width"]
-    assert cluster["width"] + console["width"] == cluster["width"] + console["width"]
-    assert console["x"] + console["width"] >= cluster["width"]
-    assert cluster["height"] == console["height"]
+    assert console["x"] == 0
+    assert console["y"] == 0
+    assert console["width"] == width
+    assert console["height"] == height
 
 
-def test_console_gets_the_configured_fraction(qt_app) -> None:
+def test_cluster_region_uses_the_remaining_fraction(qt_app) -> None:
     controller = build(cluster_screen=0, console_screen=0, console_fraction=0.25)
-    total = controller.clusterGeometry["width"] + controller.consoleGeometry["width"]
-    share = controller.consoleGeometry["width"] / total
+    width, _ = screen_size(controller)
 
-    assert share == pytest.approx(0.25, abs=0.01)
-
-
-def test_fullscreen_is_refused_while_sharing(qt_app) -> None:
-    """Tela cheia numa tela dividida faria uma janela cobrir a outra."""
-    assert not build(cluster_screen=0, console_screen=0).fullscreenAllowed
+    assert controller.clusterGeometry["width"] == pytest.approx(width * 0.75, abs=2)
 
 
-def test_fullscreen_is_allowed_on_dedicated_screens(qt_app) -> None:
+def test_fullscreen_is_always_allowed(qt_app) -> None:
+    """Mesmo dividindo, a unica janela deve ocupar o display inteiro."""
+    assert build(cluster_screen=0, console_screen=0).fullscreenAllowed
     assert build(cluster_screen=0, console_screen=1).fullscreenAllowed
+
+
+# ----------------------------------------------------------- telas proprias
+
+
+def test_dedicated_screens_give_each_window_its_own(qt_app) -> None:
+    controller = build(cluster_screen=0, console_screen=1)
+
+    if controller.screenCount > 1:
+        assert controller.dual
+        assert not controller.shared
+        assert controller.clusterScreen != controller.consoleScreen
+
+
+def test_console_takes_its_fraction_of_a_dedicated_screen(qt_app) -> None:
+    """Com tela propria, a multimidia cede o resto para a projecao."""
+    controller = build(cluster_screen=0, console_screen=1, console_fraction=0.3)
+
+    if controller.dual:
+        width, _ = screen_size(controller)
+        assert controller.consoleGeometry["width"] < width
 
 
 def test_single_screen_gives_the_console_everything(qt_app) -> None:
     controller = build(cluster_screen=0, console_screen=9)
 
-    if not controller.dual:
+    if not controller.dual and not controller.shared:
         console = controller.consoleGeometry
         assert console["x"] == 0
         assert console["width"] > 0

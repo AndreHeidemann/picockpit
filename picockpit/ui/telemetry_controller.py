@@ -12,6 +12,7 @@ from PySide6.QtCore import Signal as QtSignal
 
 from picockpit.core.events import EventBus
 from picockpit.core.models import Signal, VehicleState
+from picockpit.core.units import UnitSystem, convert
 from picockpit.services.telemetry_service import TOPIC_FAULTS, TOPIC_STATE
 
 #: Limites usados para acender os alertas do painel.
@@ -40,6 +41,7 @@ class TelemetryController(QObject):
         """
         super().__init__(parent)
         self._state = VehicleState()
+        self._units = UnitSystem.METRIC
         self._faults: list[str] = []
         self._unsubscribe_state = bus.subscribe(TOPIC_STATE, self._on_state)
         self._unsubscribe_faults = bus.subscribe(TOPIC_FAULTS, self._on_faults)
@@ -54,9 +56,60 @@ class TelemetryController(QObject):
         self._faults = list(codes)
         self.updated.emit()
 
+    def set_units(self, units: str | UnitSystem) -> None:
+        """Troca o sistema de unidades de exibicao.
+
+        O dominio continua em unidade canonica; so a borda converte. Guardar
+        valor convertido tornaria o historico incomparavel depois de uma troca.
+
+        Args:
+            units: Sistema de unidades desejado.
+        """
+        try:
+            system = UnitSystem(units)
+        except ValueError:
+            return
+        if system is self._units:
+            return
+        self._units = system
+        self.updated.emit()
+
     def _value(self, signal: Signal) -> float:
-        """Le um sinal do estado corrente."""
+        """Le um sinal do estado corrente, ja convertido para exibicao."""
+        return convert(signal, self._state.get(signal), self._units).value
+
+    def _raw(self, signal: Signal) -> float:
+        """Le um sinal na unidade canonica, sem conversao."""
         return self._state.get(signal)
+
+    def _unit(self, signal: Signal) -> str:
+        """Rotulo da unidade de exibicao de um sinal."""
+        return convert(signal, 0.0, self._units).unit
+
+    @Property(str, notify=updated)  # type: ignore[operator]
+    def speedUnit(self) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Unidade de velocidade em uso."""
+        return self._unit(Signal.SPEED)
+
+    @Property(str, notify=updated)  # type: ignore[operator]
+    def temperatureUnit(self) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Unidade de temperatura em uso."""
+        return self._unit(Signal.COOLANT_TEMP)
+
+    @Property(str, notify=updated)  # type: ignore[operator]
+    def consumptionUnit(self) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Unidade de consumo em uso."""
+        return self._unit(Signal.CONSUMPTION)
+
+    @Property(str, notify=updated)  # type: ignore[operator]
+    def fuelRateUnit(self) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Unidade de consumo horario em uso."""
+        return self._unit(Signal.FUEL_RATE)
+
+    @Property(str, notify=updated)  # type: ignore[operator]
+    def distanceUnit(self) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Unidade de distancia em uso."""
+        return self._unit(Signal.ODOMETER)
 
     @Property(float, notify=updated)  # type: ignore[operator]
     def rpm(self) -> float:
@@ -106,7 +159,7 @@ class TelemetryController(QObject):
     @Property(int, notify=updated)  # type: ignore[operator]
     def gear(self) -> int:
         """Marcha engatada. Zero representa ponto morto."""
-        return int(self._value(Signal.GEAR))
+        return int(self._raw(Signal.GEAR))
 
     @Property(str, notify=updated)  # type: ignore[operator]
     def gearLabel(self) -> str:  # noqa: N802 - nome consumido pelo QML
@@ -131,8 +184,8 @@ class TelemetryController(QObject):
 
     @Property(bool, notify=updated)  # type: ignore[operator]
     def moving(self) -> bool:
-        """Indica se ha velocidade suficiente para km/L ter significado."""
-        return self._value(Signal.CONSUMPTION) > 0.0
+        """Indica se ha velocidade suficiente para o consumo ter significado."""
+        return self._raw(Signal.CONSUMPTION) > 0.0
 
     @Property(float, notify=updated)  # type: ignore[operator]
     def range(self) -> float:
@@ -152,17 +205,21 @@ class TelemetryController(QObject):
     @Property(bool, notify=updated)  # type: ignore[operator]
     def lowFuel(self) -> bool:  # noqa: N802 - nome consumido pelo QML
         """Indica reserva de combustivel."""
-        return self._value(Signal.FUEL_LEVEL) <= LOW_FUEL_PCT
+        return self._raw(Signal.FUEL_LEVEL) <= LOW_FUEL_PCT
 
     @Property(bool, notify=updated)  # type: ignore[operator]
     def overheating(self) -> bool:
-        """Indica temperatura acima do limite seguro."""
-        return self._value(Signal.COOLANT_TEMP) >= HIGH_COOLANT_C
+        """Indica temperatura acima do limite seguro.
+
+        Comparado sempre em Celsius: limiar de seguranca e propriedade do
+        motor, nao da unidade que o motorista escolheu ver.
+        """
+        return self._raw(Signal.COOLANT_TEMP) >= HIGH_COOLANT_C
 
     @Property(bool, notify=updated)  # type: ignore[operator]
     def lowVoltage(self) -> bool:  # noqa: N802 - nome consumido pelo QML
         """Indica tensao de sistema abaixo do esperado."""
-        voltage = self._value(Signal.VOLTAGE)
+        voltage = self._raw(Signal.VOLTAGE)
         return 0.0 < voltage <= LOW_VOLTAGE_V
 
     def close(self) -> None:

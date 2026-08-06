@@ -20,6 +20,7 @@ from picockpit.core.config import AppConfig, load_config
 from picockpit.core.events import EventBus
 from picockpit.core.logging_setup import setup_logging
 from picockpit.data.database import connect
+from picockpit.data.preferences import PreferenceStore
 from picockpit.data.trip_repository import TripRepository
 from picockpit.services.chronometer import ChronometerService
 from picockpit.services.providers import TelemetryProvider
@@ -100,11 +101,17 @@ def build_engine(
         )
     _engine_built = True
 
-    theme = ThemeController(app_config.theme)
+    # Uma unica conexao serve viagens e preferencias: mesmo banco, mesmo
+    # backup, uma so migracao.
+    connection = connect(app_config.database_path)
+    preferences = PreferenceStore(connection)
+
+    # Preferencia guardada tem precedencia sobre o arquivo de fabrica.
+    theme = ThemeController(preferences.get("theme", app_config.theme))
     info = AppInfo(
         version=__version__,
         env=app_config.env,
-        target_fps=app_config.target_fps,
+        target_fps=preferences.get_int("target_fps", app_config.target_fps),
         kiosk=app_config.kiosk,
     )
     event_bus = bus or EventBus()
@@ -112,15 +119,31 @@ def build_engine(
     chronometer = ChronometerService(event_bus)
     chrono = ChronoController(event_bus, chronometer)
     charts = ChartController(event_bus)
-    settings = SettingsController(provider or create_provider(app_config), event_bus)
+    settings = SettingsController(
+        provider or create_provider(app_config),
+        event_bus,
+        preferences=preferences,
+        defaults={
+            "theme": app_config.theme,
+            "target_fps": str(app_config.target_fps),
+        },
+    )
 
-    repository = TripRepository(connect(app_config.database_path))
+    repository = TripRepository(connection)
     recorder = TripRecorder(event_bus, repository)
     trips = TripsController(repository, event_bus)
     # O gravador precisa saber o combustivel para registrar na viagem; a
     # tela de ajustes e quem sabe quando ele muda.
     settings.changed.connect(lambda: recorder.set_fuel(settings.fuel))
     recorder.set_fuel(settings.fuel)
+
+    # A troca de unidades acontece na tela de ajustes e precisa alcancar quem
+    # formata os valores.
+    settings.changed.connect(lambda: telemetry.set_units(settings.units))
+    telemetry.set_units(settings.units)
+
+    # Tema tambem e preferencia persistida: a tela grava, o controlador aplica.
+    settings.changed.connect(lambda: theme.activate(settings.theme))
 
     # Singletons registrados, e nao context properties: nomes capitalizados em
     # context property nao resolvem de forma confiavel dentro de componentes

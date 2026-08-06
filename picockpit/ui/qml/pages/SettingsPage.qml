@@ -40,9 +40,115 @@ Flickable {
 
                         text: Theme.labelOf(modelData)
                         selected: modelData === Theme.name
-                        onActivated: Theme.activate(modelData)
+                        onActivated: Settings.setTheme(modelData)
                     }
                 }
+            }
+        }
+
+        Rectangle {
+            width: page.width - 48
+            height: 1
+            color: Theme.colors.surface_alt
+        }
+
+        // -------------------------------------------------------- unidades
+        Column {
+            spacing: 10
+
+            Text {
+                text: qsTr("Unidades")
+                color: Theme.colors.text
+                font { pixelSize: 20; weight: Font.DemiBold }
+            }
+
+            Text {
+                text: qsTr("Os dados sao sempre guardados em unidade metrica; a troca afeta so a exibicao")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+            }
+
+            Row {
+                spacing: 10
+
+                Repeater {
+                    model: Settings.unitOptions
+
+                    delegate: OptionChip {
+                        required property string modelData
+
+                        text: modelData === "metric" ? qsTr("Metrico") : qsTr("Imperial")
+                        selected: modelData === Settings.units
+                        onActivated: Settings.setUnits(modelData)
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            width: page.width - 48
+            height: 1
+            color: Theme.colors.surface_alt
+        }
+
+        // ---------------------------------------------------------- tela
+        Column {
+            spacing: 10
+
+            Text {
+                text: qsTr("Tela")
+                color: Theme.colors.text
+                font { pixelSize: 20; weight: Font.DemiBold }
+            }
+
+            Text {
+                text: qsTr("Escala da interface")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+            }
+
+            Row {
+                spacing: 10
+
+                Repeater {
+                    model: Settings.scaleOptions
+
+                    delegate: OptionChip {
+                        required property real modelData
+
+                        text: Math.round(modelData * 100) + "%"
+                        selected: Math.abs(modelData - Settings.uiScale) < 0.01
+                        onActivated: Settings.setUiScale(modelData)
+                    }
+                }
+            }
+
+            Text {
+                text: qsTr("Quadros por segundo alvo")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+            }
+
+            Row {
+                spacing: 10
+
+                Repeater {
+                    model: Settings.fpsOptions
+
+                    delegate: OptionChip {
+                        required property int modelData
+
+                        text: modelData + " fps"
+                        selected: modelData === Settings.targetFps
+                        onActivated: Settings.setTargetFps(modelData)
+                    }
+                }
+            }
+
+            Text {
+                text: qsTr("O alvo de quadros passa a valer na proxima inicializacao")
+                color: Theme.colors.text_muted
+                font.pixelSize: 11
             }
         }
 
@@ -148,6 +254,11 @@ Flickable {
             width: page.width - 48
             height: 1
             color: Theme.colors.surface_alt
+        }
+
+        ActionButton {
+            text: qsTr("RESTAURAR PADROES")
+            onActivated: Settings.restoreDefaults()
         }
 
         Column {

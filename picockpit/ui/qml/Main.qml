@@ -1,6 +1,7 @@
 // Janela principal do PiCockpit OS.
+//
 // Estrutura: barra superior fixa, trilha de navegacao a esquerda e StackView
-// de conteudo. Nenhuma funcionalidade de veiculo ainda - Etapa 1 e infraestrutura.
+// de conteudo, tudo dentro de uma tela logica que pode ser escalada.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Window
@@ -64,39 +65,58 @@ ApplicationWindow {
         onActivated: Qt.quit()
     }
 
-    TopBar {
-        id: topBar
-        anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: 56
-        title: root.pages[root.currentIndex].label
-    }
+    // Tela logica. Escalar aqui, e nao tamanho de fonte a tamanho de fonte,
+    // mantem proporcao e espacamento coerentes: a interface inteira cresce
+    // junto. A largura logica encolhe na mesma medida, para o conteudo
+    // continuar preenchendo a janela.
+    Item {
+        id: canvas
 
-    NavigationRail {
-        id: rail
-        anchors { top: topBar.bottom; left: parent.left; bottom: parent.bottom }
-        width: 92
-        model: root.pages
-        currentIndex: root.currentIndex
-        onSelected: function (index) { root.currentIndex = index }
-    }
+        readonly property real factor: Settings.uiScale > 0 ? Settings.uiScale : 1.0
 
-    StackView {
-        id: contentStack
-        anchors {
-            top: topBar.bottom
-            left: rail.right
-            right: parent.right
-            bottom: parent.bottom
+        width: root.width / factor
+        height: root.height / factor
+        transform: Scale {
+            origin.x: 0
+            origin.y: 0
+            xScale: canvas.factor
+            yScale: canvas.factor
         }
-        initialItem: dashboardPage
 
-        // Transicoes curtas: em painel automotivo, resposta percebida importa
-        // mais do que animacao elaborada.
-        replaceEnter: Transition {
-            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 }
+        TopBar {
+            id: topBar
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            height: 56
+            title: root.pages[root.currentIndex].label
         }
-        replaceExit: Transition {
-            NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 90 }
+
+        NavigationRail {
+            id: rail
+            anchors { top: topBar.bottom; left: parent.left; bottom: parent.bottom }
+            width: 92
+            model: root.pages
+            currentIndex: root.currentIndex
+            onSelected: function (index) { root.currentIndex = index }
+        }
+
+        StackView {
+            id: contentStack
+            anchors {
+                top: topBar.bottom
+                left: rail.right
+                right: parent.right
+                bottom: parent.bottom
+            }
+            initialItem: dashboardPage
+
+            // Transicoes curtas: em painel automotivo, resposta percebida importa
+            // mais do que animacao elaborada.
+            replaceEnter: Transition {
+                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 }
+            }
+            replaceExit: Transition {
+                NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 90 }
+            }
         }
     }
 }

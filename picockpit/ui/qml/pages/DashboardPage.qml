@@ -17,6 +17,12 @@ Item {
 
     readonly property real sideGaugeSize: Math.min(height * 0.74, 290)
 
+    // A escala do mostrador de temperatura acompanha a unidade escolhida:
+    // 20 a 120 C equivalem a 68 a 248 F.
+    readonly property bool fahrenheit: Telemetry.temperatureUnit === "F"
+    readonly property real temperatureFloor: fahrenheit ? 68 : 20
+    readonly property real temperatureCeiling: fahrenheit ? 248 : 120
+
     // Conta-giros a esquerda.
     Gauge {
         anchors {
@@ -58,7 +64,7 @@ Item {
         maximum: Telemetry.moving ? 30 : 12
         thickness: 20
         label: qsTr("CONSUMO")
-        units: Telemetry.moving ? "km/L" : "L/h"
+        units: Telemetry.moving ? Telemetry.consumptionUnit : Telemetry.fuelRateUnit
         valueText: (Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate).toFixed(1)
         // Espelhado para abrir na direcao do centro, como no conjunto
         // simetrico de um cluster real.
@@ -88,7 +94,7 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "km/h"
+            text: Telemetry.speedUnit
             color: Theme.colors.text_muted
             font { pixelSize: 14; weight: Font.Medium; letterSpacing: 2.0 }
         }
@@ -170,13 +176,13 @@ Item {
 
         InfoCell {
             label: qsTr("AUTONOMIA")
-            value: Math.round(Telemetry.range) + " km"
+            value: Math.round(Telemetry.range) + " " + Telemetry.distanceUnit
             alert: Telemetry.lowFuel
         }
 
         InfoCell {
             label: qsTr("AR ADMITIDO")
-            value: Telemetry.intakeTemp.toFixed(0) + " °C"
+            value: Telemetry.intakeTemp.toFixed(0) + " °" + Telemetry.temperatureUnit
         }
 
         InfoCell {
@@ -202,7 +208,7 @@ Item {
 
         InfoCell {
             label: qsTr("HODOMETRO")
-            value: Telemetry.odometer.toFixed(1) + " km"
+            value: Telemetry.odometer.toFixed(1) + " " + Telemetry.distanceUnit
         }
     }
 
@@ -214,13 +220,14 @@ Item {
         width: Math.min(230, dashboard.width * 0.23)
 
         value: Telemetry.coolantTemp
-        minimum: 20
-        maximum: 120
+        minimum: dashboard.temperatureFloor
+        maximum: dashboard.temperatureCeiling
         label: qsTr("MOTOR")
         glyph: "♨"
         // Mostra o maximo junto: sem a escala, "92" nao diz se o motor esta
         // no ponto de operacao ou prestes a ferver.
-        readout: Math.round(Telemetry.coolantTemp) + " / 120 °C"
+        readout: Math.round(Telemetry.coolantTemp) + " / "
+            + Math.round(dashboard.temperatureCeiling) + " °" + Telemetry.temperatureUnit
         alert: Telemetry.overheating
         accent: Theme.colors.warning
     }

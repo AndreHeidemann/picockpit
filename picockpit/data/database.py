@@ -32,6 +32,12 @@ MIGRATIONS: Sequence[str] = (
     );
     CREATE INDEX IF NOT EXISTS idx_trips_started_at ON trips (started_at DESC);
     """,
+    """
+    CREATE TABLE IF NOT EXISTS preferences (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+    """,
 )
 
 

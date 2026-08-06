@@ -38,6 +38,8 @@ Item {
 
     // Conta-giros a esquerda.
     Gauge {
+        id: tachometer
+
         anchors {
             left: parent.left
             leftMargin: 28
@@ -63,6 +65,8 @@ Item {
     // distancia zero sobre combustivel queimado - entao o mostrador troca para
     // consumo horario, que e o que um carro real faz.
     Gauge {
+        id: consumptionGauge
+
         anchors {
             right: parent.right
             rightMargin: 28
@@ -90,9 +94,27 @@ Item {
     }
 
     // Bloco central: velocidade e marcha.
+    //
+    // Ancorado entre os dois mostradores, e nao no centro da pagina. Numeral
+    // grande com posicao centralizada invadia o mostrador da direita assim que
+    // a regiao encolhia: o tamanho da fonte tambem precisa caber na largura
+    // disponivel, nao so na altura.
+    Item {
+        id: centerArea
+
+        anchors {
+            left: tachometer.right
+            right: consumptionGauge.left
+            top: parent.top
+            bottom: parent.bottom
+            leftMargin: 6
+            rightMargin: 6
+        }
+    }
+
     Column {
         anchors {
-            horizontalCenter: parent.horizontalCenter
+            horizontalCenter: centerArea.horizontalCenter
             verticalCenter: parent.verticalCenter
             verticalCenterOffset: -30
         }
@@ -103,7 +125,9 @@ Item {
             text: Math.round(Telemetry.speed)
             color: Theme.colors.text
             font {
-                pixelSize: Math.round(dashboard.height * (dashboard.compact ? 0.26 : 0.32))
+                pixelSize: Math.round(Math.min(
+                    dashboard.height * (dashboard.compact ? 0.26 : 0.32),
+                    centerArea.width * 0.44))
                 weight: Font.Light
             }
         }

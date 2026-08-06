@@ -87,11 +87,16 @@ Item {
             border.color: Theme.colors.surface_alt
 
             Row {
+                // Termina onde os codigos de falha comecam: sem isso a ultima
+                // coluna passa por baixo deles.
                 anchors {
                     left: parent.left
+                    right: faultCodes.left
                     leftMargin: 18
+                    rightMargin: 12
                     verticalCenter: parent.verticalCenter
                 }
+                clip: true
                 spacing: 30
 
                 InfoCell {
@@ -131,6 +136,8 @@ Item {
             }
 
             Text {
+                id: faultCodes
+
                 anchors {
                     right: parent.right
                     rightMargin: 18

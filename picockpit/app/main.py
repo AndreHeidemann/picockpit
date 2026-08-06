@@ -19,9 +19,11 @@ from picockpit import __version__
 from picockpit.core.config import AppConfig, load_config
 from picockpit.core.events import EventBus
 from picockpit.core.logging_setup import setup_logging
+from picockpit.services.chronometer import ChronometerService
 from picockpit.services.providers import TelemetryProvider
 from picockpit.simulation.provider import SimulationProvider
 from picockpit.ui.bridge import AppInfo, ThemeController
+from picockpit.ui.chrono_controller import ChronoController
 from picockpit.ui.telemetry_controller import TelemetryController
 
 logger = logging.getLogger(__name__)
@@ -96,7 +98,10 @@ def build_engine(
         env=app_config.env,
         target_fps=app_config.target_fps,
     )
-    telemetry = TelemetryController(bus or EventBus())
+    event_bus = bus or EventBus()
+    telemetry = TelemetryController(event_bus)
+    chronometer = ChronometerService(event_bus)
+    chrono = ChronoController(event_bus, chronometer)
 
     # Singletons registrados, e nao context properties: nomes capitalizados em
     # context property nao resolvem de forma confiavel dentro de componentes
@@ -110,10 +115,11 @@ def build_engine(
     qmlRegisterSingletonInstance(ThemeController, QML_URI, 1, 0, "Theme", theme)
     qmlRegisterSingletonInstance(AppInfo, QML_URI, 1, 0, "AppInfo", info)
     qmlRegisterSingletonInstance(TelemetryController, QML_URI, 1, 0, "Telemetry", telemetry)
+    qmlRegisterSingletonInstance(ChronoController, QML_URI, 1, 0, "Chrono", chrono)
 
     engine = QQmlApplicationEngine()
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
-    return engine, [theme, info, telemetry]
+    return engine, [theme, info, telemetry, chrono, chronometer]
 
 
 def main() -> int:

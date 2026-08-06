@@ -53,12 +53,13 @@ def stack(qt_app):
     finally:
         qInstallMessageHandler(previous)
 
-    theme, _info, telemetry = bridges
+    theme, _info, telemetry, chrono = bridges[:4]
     yield {
         "engine": engine,
         "bus": bus,
         "theme": theme,
         "telemetry": telemetry,
+        "chrono": chrono,
         "problems": problems,
     }
 
@@ -85,6 +86,23 @@ def test_dashboard_receives_telemetry(stack: dict) -> None:
 
     assert stack["telemetry"].speed == 88.0
     assert stack["telemetry"].gearLabel == "3"
+
+
+def test_chronometer_reaches_the_ui(stack: dict) -> None:
+    """Uma arrancada publicada no barramento chega ao controlador de tempos."""
+    from picockpit.core.models import Reading, Signal
+    from picockpit.services.telemetry_service import topic_for
+
+    async def run() -> None:
+        for step in range(41):
+            await stack["bus"].publish(
+                topic_for(Signal.SPEED),
+                Reading(signal=Signal.SPEED, value=step * 3.0, timestamp=step * 0.5),
+            )
+
+    asyncio.run(run())
+
+    assert stack["chrono"].accelBest != "--"
 
 
 def test_theme_switching_updates_the_palette(stack: dict) -> None:

@@ -23,6 +23,7 @@ ApplicationWindow {
 
     readonly property var pages: [
         { key: "dashboard", label: qsTr("Painel"), glyph: "◴" },
+        { key: "performance", label: qsTr("Tempos"), glyph: "⏱" },
         { key: "media",     label: qsTr("Media"),  glyph: "▶" },
         { key: "settings",  label: qsTr("Ajustes"), glyph: "⚙" }
     ]
@@ -33,6 +34,7 @@ ApplicationWindow {
 
     function pageComponent(index) {
         switch (root.pages[index].key) {
+        case "performance": return performancePage
         case "media":    return mediaPage
         case "settings": return settingsPage
         default:         return dashboardPage
@@ -40,6 +42,7 @@ ApplicationWindow {
     }
 
     Component { id: dashboardPage; DashboardPage {} }
+    Component { id: performancePage; PerformancePage {} }
     Component { id: mediaPage;     MediaPage {} }
     Component { id: settingsPage;  SettingsPage {} }
 

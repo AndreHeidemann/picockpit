@@ -30,6 +30,11 @@ class Signal(str, Enum):
     UPTIME = "uptime"
     GEAR = "gear"
     ODOMETER = "odometer"
+    INTAKE_TEMP = "intake_temp"
+    FUEL_RATE = "fuel_rate"
+    CONSUMPTION = "consumption"
+    RANGE = "range"
+    MIL = "mil"
 
 
 #: Unidade canonica de cada sinal. A conversao para unidade de exibicao
@@ -47,6 +52,11 @@ SIGNAL_UNITS: dict[Signal, str] = {
     Signal.UPTIME: "s",
     Signal.GEAR: "",
     Signal.ODOMETER: "km",
+    Signal.INTAKE_TEMP: "C",
+    Signal.FUEL_RATE: "L/h",
+    Signal.CONSUMPTION: "km/L",
+    Signal.RANGE: "km",
+    Signal.MIL: "",
 }
 
 #: Faixa fisica plausivel de cada sinal, usada para validar leituras vindas de
@@ -65,6 +75,13 @@ SIGNAL_RANGES: dict[Signal, tuple[float, float]] = {
     # Zero representa ponto morto.
     Signal.GEAR: (0.0, 8.0),
     Signal.ODOMETER: (0.0, 9_999_999.0),
+    Signal.INTAKE_TEMP: (-40.0, 120.0),
+    Signal.FUEL_RATE: (0.0, 60.0),
+    # Zero significa parado ou sem consumo mensuravel.
+    Signal.CONSUMPTION: (0.0, 99.0),
+    Signal.RANGE: (0.0, 2000.0),
+    # Luz de injecao: 0 apagada, 1 acesa.
+    Signal.MIL: (0.0, 1.0),
 }
 
 

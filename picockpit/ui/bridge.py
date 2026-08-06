@@ -115,7 +115,11 @@ class AppInfo(QObject):
 
         samples = self._fps_samples
         self._fps_samples = []
-        logger.info(
+
+        # DEBUG de proposito: uma linha a cada 5s daria cerca de 2 MB por dia
+        # de escrita continua no cartao SD. Para medir, subir com
+        # PICOCKPIT_LOG_LEVEL=DEBUG.
+        logger.debug(
             "FPS janela de %ds: min=%d media=%.1f max=%d (alvo=%d)",
             len(samples),
             min(samples),

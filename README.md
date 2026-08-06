@@ -118,6 +118,22 @@ Xwayland como fallback automatico.
 
 Atalhos: `F11` alterna tela cheia (ensaio de kiosk sem systemd), `Ctrl+Q` encerra.
 
+### Medicao de FPS
+
+O medidor da barra superior reporta ao Python, que agrega e grava no log. Fica
+em nivel DEBUG porque uma linha a cada 5 s significaria escrita continua no
+cartao SD.
+
+```bash
+PICOCKPIT_LOG_LEVEL=DEBUG ~/picockpit/scripts/run_pi.sh
+grep 'FPS janela' ~/picockpit/logs/picockpit.log
+```
+
+Medido em 2026-08-05, painel da Etapa 3 animado, janela de 65 s:
+**60,0 fps de media, minimo 59** - identico com e sem a sessao de screen
+sharing aberta. A codificacao de video do Raspberry Pi Connect nao custou FPS
+mensuravel nesta carga.
+
 ### Analise estatica do QML
 
 ```bash
@@ -136,9 +152,27 @@ de referencia desde ja para as Etapas 3 e 4.
 
 ## Etapa 2 - Simulador
 
+Veiculo de referencia: **Ford Ka 1.0 Ti-VCT flex**, cambio manual de cinco
+marchas, tanque de 42 L. Os parametros sao aproximacoes de catalogo e serao
+calibrados contra o carro real na Etapa 8.
+
 Telemetria sintetica com coerencia fisica entre os sinais: o acelerador move o
 motor, a transmissao impoe a rotacao a partir da velocidade, a carga aquece o
 liquido de arrefecimento e o fluxo de ar consome combustivel.
+
+Numeros que o modelo produz, conferidos contra o que se espera do carro:
+
+| Grandeza | Modelo | Referencia |
+| --- | --- | --- |
+| 0-100 km/h, gasolina | 14,8 s | ~14,5 s |
+| 0-100 km/h, etanol | 13,7 s | ~13,5 s |
+| Marcha lenta | 0,83 L/h | 0,7 a 1,0 L/h |
+| Cruzeiro leve, 62 km/h | 19,7 km/L | 18 a 20 km/L |
+| 107 km/h | 14,1 km/L | 13 a 15 km/L |
+| Autonomia, tanque cheio | ~600 km | ~550 km |
+
+Etanol rende cerca de 30% menos por litro (estequiometria 9,0 contra 14,7) e
+entrega 7% mais torque - as duas coisas saem do mesmo `FuelProperties`.
 
 ```
 DriverProfile  -> acelerador e freio ao longo de um ciclo de conducao

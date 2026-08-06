@@ -1,10 +1,13 @@
-// Painel digital.
+// Painel digital do Ford Ka 1.0 Ti-VCT.
 //
 // Composicao inspirada nos clusters da familia BMW IDCevo: fundo quase preto,
 // dois arcos abertos na base flanqueando uma leitura numerica central de peso
-// leve, informacao secundaria em barras finas na borda inferior. Nenhum
-// elemento grafico e copiado - a linguagem visual e a referencia, o desenho
-// e nosso.
+// leve, informacao secundaria em barras e celulas finas nas bordas. Nenhum
+// elemento grafico e copiado - a linguagem visual e a referencia.
+//
+// A escolha das grandezas e do carro, nao do estilo: num carro a combustao o
+// que o motorista acompanha e consumo e autonomia. Tensao de bateria e
+// diagnostico, e por isso vive na faixa secundaria.
 import QtQuick
 import ".."
 import PiCockpit 1.0
@@ -12,17 +15,15 @@ import PiCockpit 1.0
 Item {
     id: dashboard
 
-    readonly property real sideGaugeSize: Math.min(height * 0.72, 280)
+    readonly property real sideGaugeSize: Math.min(height * 0.66, 260)
 
     // Conta-giros a esquerda.
     ArcGauge {
-        id: tachometer
-
         anchors {
             left: parent.left
-            leftMargin: 32
+            leftMargin: 28
             verticalCenter: parent.verticalCenter
-            verticalCenterOffset: -14
+            verticalCenterOffset: -18
         }
         width: dashboard.sideGaugeSize
         height: dashboard.sideGaugeSize
@@ -31,42 +32,40 @@ Item {
         minimum: 0
         maximum: 7000
         warningFrom: 5500
-        thickness: 12
+        thickness: 11
         label: qsTr("RPM")
         units: "rpm"
     }
 
-    // Carga do motor a direita: e o sinal que melhor traduz esforco
-    // instantaneo, e existe tanto no simulador quanto no OBD-II real.
+    // Consumo a direita. Parado, km/L nao tem significado - a conta seria
+    // distancia zero sobre combustivel queimado - entao o mostrador troca para
+    // consumo horario, que e o que um carro real faz.
     ArcGauge {
-        id: loadGauge
-
         anchors {
             right: parent.right
-            rightMargin: 32
+            rightMargin: 28
             verticalCenter: parent.verticalCenter
-            verticalCenterOffset: -14
+            verticalCenterOffset: -18
         }
         width: dashboard.sideGaugeSize
         height: dashboard.sideGaugeSize
 
-        value: Telemetry.engineLoad
+        value: Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate
         minimum: 0
-        maximum: 100
-        thickness: 12
-        label: qsTr("CARGA")
-        units: "%"
-        accent: Theme.colors.secondary
+        maximum: Telemetry.moving ? 25 : 12
+        thickness: 11
+        label: qsTr("CONSUMO")
+        units: Telemetry.moving ? "km/L" : "L/h"
+        valueText: (Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate).toFixed(1)
+        accent: Theme.colors.success
     }
 
     // Bloco central: velocidade e marcha.
     Column {
-        id: center
-
         anchors {
             horizontalCenter: parent.horizontalCenter
             verticalCenter: parent.verticalCenter
-            verticalCenterOffset: -24
+            verticalCenterOffset: -30
         }
         spacing: -6
 
@@ -74,26 +73,26 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Math.round(Telemetry.speed)
             color: Theme.colors.text
-            font { pixelSize: Math.round(dashboard.height * 0.34); weight: Font.Light }
+            font { pixelSize: Math.round(dashboard.height * 0.32); weight: Font.Light }
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "km/h"
             color: Theme.colors.text_muted
-            font { pixelSize: 15; weight: Font.Medium; letterSpacing: 2.0 }
+            font { pixelSize: 14; weight: Font.Medium; letterSpacing: 2.0 }
         }
 
         Item {
             width: 1
-            height: 12
+            height: 10
         }
 
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 54
-            height: 40
-            radius: 10
+            width: 50
+            height: 36
+            radius: 9
             color: Theme.colors.surface
             border.width: 1
             border.color: Theme.colors.surface_alt
@@ -102,7 +101,7 @@ Item {
                 anchors.centerIn: parent
                 text: Telemetry.gearLabel
                 color: Theme.colors.primary
-                font { pixelSize: 22; weight: Font.DemiBold }
+                font { pixelSize: 20; weight: Font.DemiBold }
             }
         }
     }
@@ -112,9 +111,16 @@ Item {
         anchors {
             horizontalCenter: parent.horizontalCenter
             top: parent.top
-            topMargin: 10
+            topMargin: 8
         }
-        spacing: 10
+        spacing: 8
+
+        AlertLamp {
+            active: Telemetry.milOn
+            glyph: "⬤"
+            text: qsTr("INJECAO")
+            activeColor: Theme.colors.warning
+        }
 
         AlertLamp {
             active: Telemetry.lowFuel
@@ -143,12 +149,57 @@ Item {
         }
     }
 
-    // Rodape: combustivel, hodometro e temperatura.
-    BarIndicator {
-        id: fuelBar
+    // Faixa de leituras secundarias.
+    Row {
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            bottom: parent.bottom
+            bottomMargin: 46
+        }
+        spacing: 22
 
-        anchors { left: parent.left; leftMargin: 32; bottom: parent.bottom; bottomMargin: 18 }
-        width: Math.min(220, dashboard.width * 0.22)
+        InfoCell {
+            label: qsTr("AUTONOMIA")
+            value: Math.round(Telemetry.range) + " km"
+            alert: Telemetry.lowFuel
+        }
+
+        InfoCell {
+            label: qsTr("AR ADMITIDO")
+            value: Telemetry.intakeTemp.toFixed(0) + " °C"
+        }
+
+        InfoCell {
+            label: qsTr("BATERIA")
+            value: Telemetry.voltage.toFixed(1) + " V"
+            alert: Telemetry.lowVoltage
+        }
+
+        InfoCell {
+            label: qsTr("CARGA")
+            value: Math.round(Telemetry.engineLoad) + " %"
+        }
+
+        InfoCell {
+            label: qsTr("COLETOR")
+            value: Math.round(Telemetry.map) + " kPa"
+        }
+
+        InfoCell {
+            label: qsTr("ACELERADOR")
+            value: Math.round(Telemetry.throttle) + " %"
+        }
+
+        InfoCell {
+            label: qsTr("HODOMETRO")
+            value: Telemetry.odometer.toFixed(1) + " km"
+        }
+    }
+
+    // Rodape: combustivel e temperatura do motor.
+    BarIndicator {
+        anchors { left: parent.left; leftMargin: 28; bottom: parent.bottom; bottomMargin: 14 }
+        width: Math.min(230, dashboard.width * 0.23)
 
         value: Telemetry.fuelLevel
         label: qsTr("COMBUSTIVEL")
@@ -158,40 +209,28 @@ Item {
     }
 
     BarIndicator {
-        id: tempBar
-
-        anchors { right: parent.right; rightMargin: 32; bottom: parent.bottom; bottomMargin: 18 }
-        width: Math.min(220, dashboard.width * 0.22)
+        anchors { right: parent.right; rightMargin: 28; bottom: parent.bottom; bottomMargin: 14 }
+        width: Math.min(230, dashboard.width * 0.23)
 
         value: Telemetry.coolantTemp
         minimum: 20
         maximum: 120
-        label: qsTr("TEMPERATURA")
+        label: qsTr("MOTOR")
         glyph: "♨"
         alert: Telemetry.overheating
         accent: Theme.colors.warning
     }
 
-    Column {
+    // Codigos de falha, quando houver.
+    Text {
         anchors {
             horizontalCenter: parent.horizontalCenter
             bottom: parent.bottom
-            bottomMargin: 14
+            bottomMargin: 20
         }
-        spacing: 2
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: Telemetry.odometer.toFixed(1) + " km"
-            color: Theme.colors.text
-            font { pixelSize: 15; weight: Font.Medium }
-        }
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: qsTr("HODOMETRO") + "  ·  " + Telemetry.voltage.toFixed(1) + " V"
-            color: Theme.colors.text_muted
-            font { pixelSize: 11; weight: Font.Medium; letterSpacing: 1.0 }
-        }
+        visible: Telemetry.faultCodes.length > 0
+        text: qsTr("FALHAS: ") + Telemetry.faultCodes.join("  ")
+        color: Theme.colors.warning
+        font { pixelSize: 11; weight: Font.DemiBold; letterSpacing: 1.0 }
     }
 }

@@ -21,6 +21,9 @@ TOPIC_STATE = "vehicle.state"
 #: Prefixo dos topicos por sinal, ex.: ``vehicle.signal.rpm``.
 TOPIC_SIGNAL_PREFIX = "vehicle.signal."
 
+#: Publicado quando o conjunto de codigos de falha muda.
+TOPIC_FAULTS = "vehicle.faults"
+
 
 def topic_for(signal: Signal) -> str:
     """Nome do topico de um sinal especifico.
@@ -49,6 +52,7 @@ class TelemetryService:
         self._state = VehicleState()
         self._task: asyncio.Task[None] | None = None
         self._dropped = 0
+        self._faults: tuple[str, ...] = ()
 
     @property
     def state(self) -> VehicleState:
@@ -59,6 +63,11 @@ class TelemetryService:
     def dropped_readings(self) -> int:
         """Quantidade de leituras descartadas por implausibilidade."""
         return self._dropped
+
+    @property
+    def fault_codes(self) -> tuple[str, ...]:
+        """Codigos de falha vistos na ultima leitura."""
+        return self._faults
 
     @property
     def is_running(self) -> bool:
@@ -86,11 +95,25 @@ class TelemetryService:
         await self._bus.publish(topic_for(reading.signal), reading)
         await self._bus.publish(TOPIC_STATE, self._state)
 
+    async def refresh_faults(self) -> None:
+        """Publica os codigos de falha quando o conjunto muda.
+
+        Publicar so na mudanca evita acordar assinantes a cada amostra por um
+        dado que fica igual por horas.
+        """
+        codes = self._provider.fault_codes()
+        if codes == self._faults:
+            return
+        self._faults = codes
+        await self._bus.publish(TOPIC_FAULTS, codes)
+
     async def run(self) -> None:
         """Consome o provider ate ser cancelado."""
         async with self._provider:
             async for reading in self._provider.stream():
                 await self.handle(reading)
+                if reading.signal is Signal.MIL:
+                    await self.refresh_faults()
 
     async def start(self) -> None:
         """Inicia o laco de consumo em segundo plano."""

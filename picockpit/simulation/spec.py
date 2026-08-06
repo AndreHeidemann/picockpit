@@ -1,12 +1,15 @@
 """Parametros fisicos do veiculo simulado.
 
 Separado do modelo para que trocar de "carro" seja trocar de dados, nao de
-codigo - util quando o painel for calibrado contra um veiculo real na Etapa 8.
+codigo. Os valores atuais descrevem um Ford Ka 1.0 Ti-VCT flex e sao
+aproximacoes de catalogo: serao calibrados contra o veiculo real na Etapa 8,
+quando houver leitura de OBD-II para comparar.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from enum import Enum
 
 #: Aceleracao da gravidade em m/s^2.
 GRAVITY = 9.81
@@ -17,57 +20,118 @@ AIR_DENSITY_G_PER_L = 1.2
 #: Mesma densidade na unidade usada no calculo de arrasto.
 AIR_DENSITY_KG_M3 = AIR_DENSITY_G_PER_L
 
-#: Relacao ar/combustivel estequiometrica para gasolina.
-STOICH_AFR = 14.7
-
-#: Densidade da gasolina em g/L.
-FUEL_DENSITY_G_PER_L = 745.0
-
 #: Pressao atmosferica ao nivel do mar, em kPa.
 ATMOSPHERIC_KPA = 101.3
+
+
+class FuelKind(str, Enum):
+    """Combustivel em uso. Num flex, muda a quimica da queima."""
+
+    GASOLINE = "gasoline"
+    ETHANOL = "ethanol"
+
+
+@dataclass(frozen=True, slots=True)
+class FuelProperties:
+    """Propriedades do combustivel que entram no calculo de consumo.
+
+    Attributes:
+        afr: Relacao ar/combustivel estequiometrica.
+        density_g_per_l: Densidade em g/L.
+        label: Nome curto para exibicao.
+        nominal_km_per_l: Consumo tipico em ciclo misto, usado como estimativa
+            inicial de autonomia antes de haver historico suficiente.
+        torque_factor: Multiplicador de torque. Motor flex rende mais com
+            etanol, por causa da octanagem maior e do avanco de ignicao que
+            ela permite.
+    """
+
+    afr: float
+    density_g_per_l: float
+    label: str
+    nominal_km_per_l: float
+    torque_factor: float = 1.0
+
+
+#: Etanol precisa de bem mais massa de combustivel para a mesma massa de ar,
+#: e por isso rende menos quilometros por litro.
+FUEL_PROPERTIES: dict[FuelKind, FuelProperties] = {
+    FuelKind.GASOLINE: FuelProperties(
+        afr=14.7,
+        density_g_per_l=745.0,
+        label="Gasolina",
+        nominal_km_per_l=13.0,
+        torque_factor=1.0,
+    ),
+    FuelKind.ETHANOL: FuelProperties(
+        afr=9.0,
+        density_g_per_l=789.0,
+        label="Etanol",
+        nominal_km_per_l=9.0,
+        torque_factor=1.07,
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
 class VehicleSpec:
     """Caracteristicas mecanicas do veiculo simulado.
 
-    Os valores padrao descrevem um hatch medio de 2.0 L aspirado, escolhido por
-    ser um ponto de operacao comum e de numeros facilmente conferiveis.
+    Padroes correspondentes ao Ford Ka 1.0 Ti-VCT flex, cambio manual de cinco
+    marchas, rodas 175/65 R14.
     """
 
-    mass_kg: float = 1400.0
+    name: str = "Ford Ka 1.0 Ti-VCT"
+    fuel: FuelKind = FuelKind.GASOLINE
+
+    #: Massa em ordem de marcha com um ocupante.
+    mass_kg: float = 1050.0
     #: Produto Cd * area frontal, em m^2.
-    drag_area_m2: float = 0.65
+    drag_area_m2: float = 0.66
     rolling_resistance: float = 0.013
-    wheel_radius_m: float = 0.31
-    final_drive: float = 3.9
-    gear_ratios: tuple[float, ...] = (3.55, 2.05, 1.38, 1.03, 0.81, 0.67)
-    displacement_l: float = 2.0
-    idle_rpm: float = 800.0
+    #: Raio dinamico do pneu 175/65 R14.
+    wheel_radius_m: float = 0.29
+    final_drive: float = 4.06
+    gear_ratios: tuple[float, ...] = (3.58, 1.93, 1.28, 0.95, 0.76)
+    displacement_l: float = 1.0
+    idle_rpm: float = 850.0
     redline_rpm: float = 6500.0
     #: Torque maximo em Nm e a rotacao onde ocorre.
-    peak_torque_nm: float = 200.0
-    peak_torque_rpm: float = 3500.0
-    max_brake_force_n: float = 7000.0
+    peak_torque_nm: float = 98.0
+    peak_torque_rpm: float = 4250.0
+    #: Perdas de transmissao entre volante e roda.
+    drivetrain_efficiency: float = 0.85
+    max_brake_force_n: float = 6000.0
     #: Torque de freio-motor com acelerador fechado, em Nm.
-    engine_brake_nm: float = 35.0
-    tank_capacity_l: float = 50.0
+    engine_brake_nm: float = 22.0
+    tank_capacity_l: float = 42.0
     #: Temperatura de operacao do liquido de arrefecimento, em C.
-    operating_temp_c: float = 90.0
+    operating_temp_c: float = 92.0
     ambient_temp_c: float = 25.0
     #: Constante de tempo do aquecimento do motor, em segundos.
     thermal_tau_s: float = 150.0
+    #: Constante de tempo do ar admitido, que responde bem mais rapido.
+    intake_tau_s: float = 30.0
     #: Rotacoes de troca de marcha para cima e para baixo.
-    upshift_rpm: float = 3200.0
-    downshift_rpm: float = 1300.0
+    #: Rotacao de troca com acelerador leve; sobe junto com o acelerador.
+    upshift_rpm: float = 2300.0
+    downshift_rpm: float = 1350.0
     #: Intervalo minimo entre trocas, evita oscilacao de marcha.
     shift_cooldown_s: float = 0.8
     #: Tensao do sistema com o motor em funcionamento.
     charging_voltage: float = 14.2
+    #: Consumo minimo em marcha lenta, em g/s.
+    idle_fuel_g_s: float = 0.17
+    #: Velocidade abaixo da qual km/L perde sentido e o painel mostra L/h.
+    consumption_floor_kmh: float = 5.0
+    #: Constante de tempo da media de consumo usada na autonomia, em segundos
+    #: de movimento. Curta demais faz a autonomia pular a cada pisada.
+    consumption_average_tau_s: float = 90.0
 
-    #: Consumo em marcha lenta como fracao do consumo maximo. Mantido explicito
-    #: para nao depender de um valor magico espalhado pelo modelo.
-    idle_fuel_fraction: float = field(default=0.03)
+    @property
+    def fuel_properties(self) -> FuelProperties:
+        """Propriedades do combustivel configurado."""
+        return FUEL_PROPERTIES[self.fuel]
 
     def gear_count(self) -> int:
         """Numero de marchas a frente."""

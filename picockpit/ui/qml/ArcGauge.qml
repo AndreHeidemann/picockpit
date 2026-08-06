@@ -18,6 +18,9 @@ Item {
     property real thickness: 10
     property string label: ""
     property string units: ""
+    // Texto central. Por padrao o valor arredondado, mas grandezas como
+    // km/L precisam de casa decimal e de troca de unidade quando parado.
+    property string valueText: Math.round(value).toString()
     property color accent: Theme.colors.primary
     property int tickCount: 9
 
@@ -136,7 +139,7 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Math.round(gauge.value)
+            text: gauge.valueText
             color: gauge.inWarning ? Theme.colors.danger : Theme.colors.text
             font { pixelSize: Math.round(gauge.radius * 0.42); weight: Font.Light }
         }

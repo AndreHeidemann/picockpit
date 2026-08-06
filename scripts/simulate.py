@@ -21,12 +21,14 @@ from picockpit.simulation.provider import SimulationProvider
 COLUMNS = (
     Signal.SPEED,
     Signal.RPM,
+    Signal.GEAR,
     Signal.THROTTLE,
-    Signal.ENGINE_LOAD,
-    Signal.MAP,
-    Signal.MAF,
-    Signal.COOLANT_TEMP,
+    Signal.CONSUMPTION,
+    Signal.FUEL_RATE,
+    Signal.RANGE,
     Signal.FUEL_LEVEL,
+    Signal.COOLANT_TEMP,
+    Signal.INTAKE_TEMP,
     Signal.VOLTAGE,
 )
 
@@ -37,8 +39,8 @@ async def main(duration_s: float, time_scale: float) -> None:
     provider = SimulationProvider(sample_interval_s=0.05, time_scale=time_scale)
     service = TelemetryService(provider, bus)
 
-    header = " | ".join(f"{signal.value:>12}" for signal in COLUMNS)
-    units = " | ".join(f"{SIGNAL_UNITS[signal]:>12}" for signal in COLUMNS)
+    header = " | ".join(f"{signal.value:>11}" for signal in COLUMNS)
+    units = " | ".join(f"{SIGNAL_UNITS[signal]:>11}" for signal in COLUMNS)
     print(header)
     print(units)
     print("-" * len(header))
@@ -50,7 +52,7 @@ async def main(duration_s: float, time_scale: float) -> None:
     try:
         for _ in range(int(duration_s)):
             await asyncio.sleep(1.0)
-            row = " | ".join(f"{latest.get(signal, 0.0):>12.1f}" for signal in COLUMNS)
+            row = " | ".join(f"{latest.get(signal, 0.0):>11.1f}" for signal in COLUMNS)
             print(row, flush=True)
     finally:
         await service.stop()

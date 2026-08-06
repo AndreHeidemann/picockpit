@@ -12,7 +12,7 @@ from PySide6.QtCore import Signal as QtSignal
 
 from picockpit.core.events import EventBus
 from picockpit.core.models import Signal, VehicleState
-from picockpit.services.telemetry_service import TOPIC_STATE
+from picockpit.services.telemetry_service import TOPIC_FAULTS, TOPIC_STATE
 
 #: Limites usados para acender os alertas do painel.
 LOW_FUEL_PCT = 12.0
@@ -40,11 +40,18 @@ class TelemetryController(QObject):
         """
         super().__init__(parent)
         self._state = VehicleState()
-        self._unsubscribe = bus.subscribe(TOPIC_STATE, self._on_state)
+        self._faults: list[str] = []
+        self._unsubscribe_state = bus.subscribe(TOPIC_STATE, self._on_state)
+        self._unsubscribe_faults = bus.subscribe(TOPIC_FAULTS, self._on_faults)
 
     def _on_state(self, state: VehicleState) -> None:
         """Recebe o estado consolidado e notifica a interface."""
         self._state = state
+        self.updated.emit()
+
+    def _on_faults(self, codes: tuple[str, ...]) -> None:
+        """Recebe a lista de codigos de falha ativos."""
+        self._faults = list(codes)
         self.updated.emit()
 
     def _value(self, signal: Signal) -> float:
@@ -82,6 +89,11 @@ class TelemetryController(QObject):
         return self._value(Signal.ENGINE_LOAD)
 
     @Property(float, notify=updated)  # type: ignore[operator]
+    def map(self) -> float:
+        """Pressao do coletor de admissao em kPa."""
+        return self._value(Signal.MAP)
+
+    @Property(float, notify=updated)  # type: ignore[operator]
     def voltage(self) -> float:
         """Tensao do sistema eletrico."""
         return self._value(Signal.VOLTAGE)
@@ -102,6 +114,41 @@ class TelemetryController(QObject):
         gear = self.gear
         return "N" if gear <= 0 else str(gear)
 
+    @Property(float, notify=updated)  # type: ignore[operator]
+    def intakeTemp(self) -> float:  # noqa: N802 - nome consumido pelo QML
+        """Temperatura do ar admitido em C."""
+        return self._value(Signal.INTAKE_TEMP)
+
+    @Property(float, notify=updated)  # type: ignore[operator]
+    def fuelRate(self) -> float:  # noqa: N802 - nome consumido pelo QML
+        """Consumo horario em L/h."""
+        return self._value(Signal.FUEL_RATE)
+
+    @Property(float, notify=updated)  # type: ignore[operator]
+    def consumption(self) -> float:
+        """Consumo instantaneo em km/L. Zero significa parado."""
+        return self._value(Signal.CONSUMPTION)
+
+    @Property(bool, notify=updated)  # type: ignore[operator]
+    def moving(self) -> bool:
+        """Indica se ha velocidade suficiente para km/L ter significado."""
+        return self._value(Signal.CONSUMPTION) > 0.0
+
+    @Property(float, notify=updated)  # type: ignore[operator]
+    def range(self) -> float:
+        """Autonomia estimada em km."""
+        return self._value(Signal.RANGE)
+
+    @Property(bool, notify=updated)  # type: ignore[operator]
+    def milOn(self) -> bool:  # noqa: N802 - nome consumido pelo QML
+        """Indica luz de injecao acesa."""
+        return self._value(Signal.MIL) >= 1.0
+
+    @Property("QStringList", notify=updated)  # type: ignore[operator]
+    def faultCodes(self) -> list[str]:  # noqa: N802 - nome consumido pelo QML
+        """Codigos de falha ativos."""
+        return list(self._faults)
+
     @Property(bool, notify=updated)  # type: ignore[operator]
     def lowFuel(self) -> bool:  # noqa: N802 - nome consumido pelo QML
         """Indica reserva de combustivel."""
@@ -119,5 +166,6 @@ class TelemetryController(QObject):
         return 0.0 < voltage <= LOW_VOLTAGE_V
 
     def close(self) -> None:
-        """Cancela a inscricao no barramento."""
-        self._unsubscribe()
+        """Cancela as inscricoes no barramento."""
+        self._unsubscribe_state()
+        self._unsubscribe_faults()

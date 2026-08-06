@@ -11,9 +11,10 @@ import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
-from picockpit.core.models import ProviderKind, Reading
+from picockpit.core.models import ProviderKind, Reading, Signal
 from picockpit.services.providers import ProviderError, TelemetryProvider
 from picockpit.simulation.driver import DriverProfile
+from picockpit.simulation.faults import FaultInjector
 from picockpit.simulation.model import VehicleModel
 from picockpit.simulation.spec import VehicleSpec
 
@@ -37,6 +38,7 @@ class SimulationProvider(TelemetryProvider):
     time_scale: float = 1.0
     spec: VehicleSpec | None = None
     driver: DriverProfile | None = None
+    faults: FaultInjector | None = None
 
     _model: VehicleModel | None = None
     _connected: bool = False
@@ -69,6 +71,7 @@ class SimulationProvider(TelemetryProvider):
         """Instancia o modelo e o motorista sintetico."""
         self._model = VehicleModel(spec=self.spec or VehicleSpec())
         self.driver = self.driver or DriverProfile()
+        self.faults = self.faults or FaultInjector()
         self._clock_s = 0.0
         self._connected = True
         logger.info("SimulationProvider conectado (intervalo=%.3fs)", self.sample_interval_s)
@@ -78,6 +81,10 @@ class SimulationProvider(TelemetryProvider):
         self._connected = False
         self._model = None
         logger.info("SimulationProvider desconectado")
+
+    def fault_codes(self) -> tuple[str, ...]:
+        """Codigos de falha injetados no veiculo simulado."""
+        return self.faults.codes if self.faults else ()
 
     def sample(self) -> list[Reading]:
         """Avanca a simulacao em um passo e devolve as leituras do instante.
@@ -98,6 +105,7 @@ class SimulationProvider(TelemetryProvider):
         self._clock_s += dt
         throttle, brake = self.driver.step(dt)
         values = self.model.step(dt, throttle, brake)
+        values[Signal.MIL] = 1.0 if (self.faults and self.faults.mil_on) else 0.0
 
         return [
             Reading(signal=signal, value=value, timestamp=self._clock_s, source=self.kind)

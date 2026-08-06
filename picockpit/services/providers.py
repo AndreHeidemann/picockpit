@@ -35,6 +35,17 @@ class TelemetryProvider(ABC):
     def is_connected(self) -> bool:
         """Indica se a fonte esta pronta para fornecer dados."""
 
+    def fault_codes(self) -> tuple[str, ...]:
+        """Codigos de falha ativos no veiculo.
+
+        Implementacao padrao vazia: nem toda fonte sabe responder isso. O
+        provider OBD-II atendera pelo modo 03 na Etapa 8.
+
+        Returns:
+            Codigos no formato OBD-II.
+        """
+        return ()
+
     async def __aenter__(self) -> TelemetryProvider:
         """Conecta ao entrar no contexto assincrono."""
         await self.connect()

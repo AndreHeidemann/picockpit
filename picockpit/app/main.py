@@ -29,6 +29,7 @@ from picockpit.simulation.provider import SimulationProvider
 from picockpit.ui.bridge import AppInfo, ThemeController
 from picockpit.ui.chart_controller import ChartController
 from picockpit.ui.chrono_controller import ChronoController
+from picockpit.ui.display_controller import DisplayController
 from picockpit.ui.layout_controller import LayoutController
 from picockpit.ui.settings_controller import SettingsController
 from picockpit.ui.telemetry_controller import TelemetryController
@@ -121,6 +122,11 @@ def build_engine(
     chrono = ChronoController(event_bus, chronometer)
     charts = ChartController(event_bus)
     layout = LayoutController(preferences)
+    displays = DisplayController(
+        cluster_screen=app_config.cluster_screen,
+        console_screen=app_config.console_screen,
+        console_fraction=app_config.console_fraction,
+    )
     settings = SettingsController(
         provider or create_provider(app_config),
         event_bus,
@@ -164,6 +170,7 @@ def build_engine(
     qmlRegisterSingletonInstance(ChronoController, QML_URI, 1, 0, "Chrono", chrono)
     qmlRegisterSingletonInstance(ChartController, QML_URI, 1, 0, "Chart", charts)
     qmlRegisterSingletonInstance(LayoutController, QML_URI, 1, 0, "Layout", layout)
+    qmlRegisterSingletonInstance(DisplayController, QML_URI, 1, 0, "Display", displays)
     qmlRegisterSingletonInstance(SettingsController, QML_URI, 1, 0, "Settings", settings)
     qmlRegisterSingletonInstance(TripsController, QML_URI, 1, 0, "Trips", trips)
 
@@ -180,6 +187,7 @@ def build_engine(
         recorder,
         trips,
         layout,
+        displays,
     ]
 
 

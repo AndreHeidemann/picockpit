@@ -19,3 +19,13 @@ theme = "normal"
 
 # Tela cheia sem decoracao. Ligado em producao, desligado em desenvolvimento.
 kiosk = false
+
+# Displays. O do motorista mostra so instrumentos e nao recebe toque; o da
+# multimidia concentra navegacao, ajustes e a projecao do CarPlay/Android Auto.
+# Com um monitor so, as duas janelas dividem a mesma tela para desenvolvimento.
+cluster_screen = 0
+console_screen = 1
+
+# Fracao do display da multimidia ocupada pela nossa barra lateral. O resto e
+# da janela de projecao.
+console_fraction = 0.3

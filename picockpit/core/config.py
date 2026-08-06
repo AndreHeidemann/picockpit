@@ -59,6 +59,14 @@ class AppConfig:
         kiosk: Inicia em tela cheia, sem decoracao de janela. E o modo de uso
             no carro; em desenvolvimento atrapalha, por isso o padrao e
             desligado.
+        cluster_screen: Indice do display do motorista, onde ficam os
+            instrumentos. Sem toque: e a tela que o motorista olha, nao a que
+            ele opera.
+        console_screen: Indice do display da multimidia, onde ficam a barra de
+            navegacao, os ajustes e a projecao.
+        console_fraction: Fracao do display da multimidia ocupada pela nossa
+            barra. O restante fica para a janela de projecao, posicionada pelo
+            compositor.
     """
 
     env: str = "development"
@@ -70,6 +78,9 @@ class AppConfig:
     database_path: Path = Path("data/picockpit.db")
     theme: str = "normal"
     kiosk: bool = False
+    cluster_screen: int = 0
+    console_screen: int = 1
+    console_fraction: float = 0.3
 
 
 def _coerce(current: object, raw: str) -> object:

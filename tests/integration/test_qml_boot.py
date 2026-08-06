@@ -69,6 +69,18 @@ def test_main_qml_loads(stack: dict) -> None:
     assert stack["engine"].rootObjects(), "Main.qml nao carregou"
 
 
+def test_both_windows_are_created(stack: dict) -> None:
+    """A raiz cria as duas janelas: cluster e multimidia.
+
+    Sao papeis diferentes com requisitos diferentes - a do motorista nao recebe
+    comando - e por isso vivem em janelas separadas, nao em abas.
+    """
+    root = stack["engine"].rootObjects()[0]
+
+    assert root.property("cluster") is not None
+    assert root.property("multimedia") is not None
+
+
 def test_qml_emits_no_warnings(stack: dict) -> None:
     """Nenhum aviso do QML durante a construcao da interface."""
     assert not stack["problems"], "QML emitiu avisos:\n" + "\n".join(stack["problems"])

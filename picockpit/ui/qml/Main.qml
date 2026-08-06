@@ -15,11 +15,13 @@ ApplicationWindow {
     width: 1280
     height: 480
     visible: true
+    visibility: kiosk ? Window.FullScreen : Window.Windowed
     title: qsTr("PiCockpit OS")
     color: Theme.colors.background
 
-    // Alternado com F11 para ensaiar o modo kiosk sem systemd.
-    property bool kiosk: false
+    // Alternado com F11 para ensaiar o modo kiosk sem systemd. No carro
+    // quem decide e a configuracao, e a janela ja nasce em tela cheia.
+    property bool kiosk: AppInfo.kiosk
 
     readonly property var pages: [
         { key: "dashboard", label: qsTr("Painel"), glyph: "◴" },
@@ -54,10 +56,7 @@ ApplicationWindow {
 
     Shortcut {
         sequences: ["F11"]
-        onActivated: {
-            root.kiosk = !root.kiosk
-            root.visibility = root.kiosk ? Window.FullScreen : Window.Windowed
-        }
+        onActivated: root.kiosk = !root.kiosk
     }
 
     Shortcut {

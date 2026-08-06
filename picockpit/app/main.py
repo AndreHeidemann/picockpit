@@ -105,6 +105,7 @@ def build_engine(
         version=__version__,
         env=app_config.env,
         target_fps=app_config.target_fps,
+        kiosk=app_config.kiosk,
     )
     event_bus = bus or EventBus()
     telemetry = TelemetryController(event_bus)

@@ -95,13 +95,15 @@ class AppInfo(QObject):
         version: str,
         env: str,
         target_fps: int = 60,
+        kiosk: bool = False,
         parent: QObject | None = None,
     ) -> None:
-        """Inicializa com versao, ambiente e alvo de FPS correntes."""
+        """Inicializa com versao, ambiente, alvo de FPS e modo de exibicao."""
         super().__init__(parent)
         self._version = version
         self._env = env
         self._target_fps = target_fps
+        self._kiosk = kiosk
         self._fps_samples: list[int] = []
 
     @Property(str, constant=True)  # type: ignore[operator]
@@ -118,6 +120,11 @@ class AppInfo(QObject):
     def targetFps(self) -> int:  # noqa: N802 - nome consumido pelo QML
         """Taxa de quadros alvo, usada como referencia pelo medidor de FPS."""
         return self._target_fps
+
+    @Property(bool, constant=True)  # type: ignore[operator]
+    def kiosk(self) -> bool:
+        """Indica se a janela deve abrir em tela cheia."""
+        return self._kiosk
 
     @Slot(int)
     def reportFps(self, fps: int) -> None:  # noqa: N802 - nome consumido pelo QML

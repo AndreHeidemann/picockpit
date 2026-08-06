@@ -197,6 +197,63 @@ esperar.
 
 ---
 
+## Etapa 13 - Producao no Pi
+
+### Instalar como servico
+
+```bash
+# no Pi
+~/picockpit/scripts/install_service.sh
+systemctl --user start picockpit
+journalctl --user -u picockpit -f
+```
+
+E um servico **de usuario**, nao de sistema: a aplicacao precisa do socket
+Wayland, que vive em `/run/user/<uid>` e pertence ao usuario da sessao
+grafica.
+
+`Restart=always` e o watchdog do projeto - se a interface cair, ela volta em
+3 s. `StartLimitBurst=5` evita laco infinito quando a falha e permanente: o
+servico desiste e fica no journal em vez de repetir o mesmo erro para sempre.
+
+`KillSignal=SIGTERM` com `TimeoutStopSec=20` importa mais do que parece: e por
+esse caminho que a viagem em andamento e gravada antes do desligamento.
+
+### Alternar desenvolvimento e producao
+
+O modo kiosk vem da configuracao (`kiosk = true` ou `PICOCKPIT_KIOSK=true`).
+Em desenvolvimento fica desligado, para a janela conviver com o desktop; o
+servico liga por variavel de ambiente. `F11` alterna em tempo de execucao.
+
+```bash
+systemctl --user stop picockpit      # sai de producao
+~/picockpit/scripts/run_pi.sh        # sobe em modo janela
+```
+
+### Atualizar
+
+```bash
+~/picockpit/scripts/update.sh
+```
+
+Faz backup, para o servico, atualiza codigo e dependencias, roda a suite e so
+entao sobe de volta. Atualizacao que executa migracao de banco sem copia de
+seguranca e aposta, nao procedimento.
+
+### Backup e restauracao
+
+```bash
+~/picockpit/scripts/backup.sh
+~/picockpit/scripts/restore.sh ~/picockpit-backups/picockpit-AAAAMMDD-HHMMSS.tar.gz
+```
+
+O banco e copiado pela API de backup do SQLite, nao com `cp`: em modo WAL,
+copiar o arquivo com a aplicacao rodando pode capturar um estado sem as
+transacoes que ainda vivem no journal. O backup mantem os 10 mais recentes -
+cartao cheio derruba a aplicacao inteira.
+
+---
+
 ## Decisoes tecnicas relevantes
 
 ### PySide6 fixado em 6.8.0.2

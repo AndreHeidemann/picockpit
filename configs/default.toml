@@ -12,3 +12,6 @@ sample_interval_ms = 50
 
 database_path = "data/picockpit.db"
 theme = "normal"
+
+# Tela cheia sem decoracao. Ligado em producao, desligado em desenvolvimento.
+kiosk = false

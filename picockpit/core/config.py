@@ -34,6 +34,9 @@ class AppConfig:
         sample_interval_ms: Intervalo de amostragem dos providers.
         database_path: Caminho do banco SQLite.
         theme: Tema visual inicial.
+        kiosk: Inicia em tela cheia, sem decoracao de janela. E o modo de uso
+            no carro; em desenvolvimento atrapalha, por isso o padrao e
+            desligado.
     """
 
     env: str = "development"
@@ -44,6 +47,7 @@ class AppConfig:
     sample_interval_ms: int = 50
     database_path: Path = Path("data/picockpit.db")
     theme: str = "normal"
+    kiosk: bool = False
 
 
 def _coerce(current: object, raw: str) -> object:

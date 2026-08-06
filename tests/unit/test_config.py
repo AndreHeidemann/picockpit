@@ -42,3 +42,18 @@ def test_env_values_are_coerced_to_field_types() -> None:
 def test_unknown_env_keys_are_ignored() -> None:
     config = load_config(path=Path("nao-existe.toml"), env={"PICOCKPIT_NAO_EXISTE": "1"})
     assert config == AppConfig()
+
+
+def test_kiosk_is_off_by_default() -> None:
+    assert load_config(path=Path("nao-existe.toml"), env={}).kiosk is False
+
+
+def test_kiosk_reads_boolean_words_from_the_environment() -> None:
+    """O servico systemd liga o modo kiosk por variavel de ambiente."""
+    for value in ("true", "1", "yes", "on"):
+        config = load_config(path=Path("nao-existe.toml"), env={"PICOCKPIT_KIOSK": value})
+        assert config.kiosk is True, value
+
+    for value in ("false", "0", "no", ""):
+        config = load_config(path=Path("nao-existe.toml"), env={"PICOCKPIT_KIOSK": value})
+        assert config.kiosk is False, value

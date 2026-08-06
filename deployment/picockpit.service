@@ -1,0 +1,46 @@
+# Servico de usuario, e nao de sistema.
+#
+# A aplicacao precisa da sessao grafica do usuario - o socket Wayland vive em
+# /run/user/<uid> e pertence a ele. Um servico de sistema rodando como root nao
+# alcanca esse socket sem gambiarra de permissao, e gambiarra em sistema de
+# proposito unico dentro de um carro e o tipo de coisa que falha no calor de
+# janeiro, longe de qualquer teclado.
+#
+# Instalar com scripts/install_service.sh
+
+[Unit]
+Description=PiCockpit OS - painel automotivo
+Documentation=https://github.com/andreheidemann/picockpit
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/picockpit
+Environment=PICOCKPIT_ENV=production
+Environment=PICOCKPIT_KIOSK=true
+Environment=PICOCKPIT_LOG_LEVEL=INFO
+# Invocado via bash de proposito: o repositorio pode ter vindo de um clone
+# em filesystem que nao preserva o bit de execucao, e ExecStart direto
+# falharia com 203/EXEC - erro que nao diz nada sobre a causa.
+ExecStart=/bin/bash %h/picockpit/scripts/run_pi.sh
+
+# Reinicio automatico e o watchdog do projeto: se a interface cair, ela volta
+# sozinha. StartLimit evita laco de reinicio infinito quando a falha e
+# permanente - depois de 5 tentativas em 60 s o servico para e fica no log,
+# em vez de consumir CPU repetindo o mesmo erro para sempre.
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# SIGTERM e o caminho que grava a viagem em andamento. O tempo de espera
+# precisa ser generoso o bastante para o commit no SQLite terminar.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

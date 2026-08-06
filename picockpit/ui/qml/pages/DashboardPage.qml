@@ -181,62 +181,12 @@ Item {
         }
     }
 
-    // Faixa de leituras secundarias. Fica entre as duas barras e corta o que
-    // nao couber, em vez de sobrepor.
-    Row {
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: parent.bottom
-            bottomMargin: dashboard.compact ? 52 : 46
-        }
-        spacing: dashboard.compact ? 14 : 22
-
-        InfoCell {
-            label: qsTr("AUTONOMIA")
-            value: Math.round(Telemetry.range) + " " + Telemetry.distanceUnit
-            alert: Telemetry.lowFuel
-        }
-
-        InfoCell {
-            visible: !dashboard.compact
-            label: qsTr("AR ADMITIDO")
-            value: Telemetry.intakeTemp.toFixed(0) + " °" + Telemetry.temperatureUnit
-        }
-
-        InfoCell {
-            label: qsTr("BATERIA")
-            value: Telemetry.voltage.toFixed(1) + " V"
-            alert: Telemetry.lowVoltage
-        }
-
-        InfoCell {
-            visible: !dashboard.veryCompact
-            label: qsTr("CARGA")
-            value: Math.round(Telemetry.engineLoad) + " %"
-        }
-
-        InfoCell {
-            visible: !dashboard.compact
-            label: qsTr("COLETOR")
-            value: Math.round(Telemetry.map) + " kPa"
-        }
-
-        InfoCell {
-            visible: !dashboard.veryCompact
-            label: qsTr("ACELERADOR")
-            value: Math.round(Telemetry.throttle) + " %"
-        }
-
-        InfoCell {
-            label: qsTr("HODOMETRO")
-            value: Telemetry.odometer.toFixed(1) + " " + Telemetry.distanceUnit
-        }
-    }
-
     // Rodape. As barras acompanham o arco de cima: temperatura do motor sob o
     // conta-giros, combustivel sob o consumo. Agrupar por assunto vale mais do
     // que simetria - o olho procura combustivel perto de km/L.
     BarIndicator {
+        id: engineBar
+
         anchors {
             left: parent.left
             leftMargin: dashboard.compact ? 16 : 28
@@ -259,6 +209,8 @@ Item {
     }
 
     BarIndicator {
+        id: fuelBar
+
         anchors {
             right: parent.right
             rightMargin: dashboard.compact ? 16 : 28
@@ -273,6 +225,75 @@ Item {
         readout: Math.round(Telemetry.fuelLevel) + " %"
         alert: Telemetry.lowFuel
         accent: Theme.colors.success
+    }
+
+    // Faixa de leituras secundarias.
+    //
+    // Ancorada entre as duas barras, e nao centralizada na pagina: limiar fixo
+    // de largura errou feio quando a escala da interface entrou na conta - a
+    // regiao tinha 969 px logicos, acima do limiar, e mesmo assim nao cabia.
+    // O espaco disponivel e o que existe entre as barras, e e ele que decide
+    // quantas leituras aparecem.
+    Item {
+        id: infoStrip
+
+        anchors {
+            left: engineBar.right
+            right: fuelBar.left
+            bottom: parent.bottom
+            leftMargin: 14
+            rightMargin: 14
+            bottomMargin: 46
+        }
+        height: 40
+        clip: true
+
+        Row {
+            anchors.centerIn: parent
+            spacing: infoStrip.width < 560 ? 12 : 22
+
+            InfoCell {
+                label: qsTr("AUTONOMIA")
+                value: Math.round(Telemetry.range) + " " + Telemetry.distanceUnit
+                alert: Telemetry.lowFuel
+            }
+
+            InfoCell {
+                visible: infoStrip.width > 760
+                label: qsTr("AR ADMITIDO")
+                value: Telemetry.intakeTemp.toFixed(0) + " °" + Telemetry.temperatureUnit
+            }
+
+            InfoCell {
+                visible: infoStrip.width > 380
+                label: qsTr("BATERIA")
+                value: Telemetry.voltage.toFixed(1) + " V"
+                alert: Telemetry.lowVoltage
+            }
+
+            InfoCell {
+                visible: infoStrip.width > 560
+                label: qsTr("CARGA")
+                value: Math.round(Telemetry.engineLoad) + " %"
+            }
+
+            InfoCell {
+                visible: infoStrip.width > 760
+                label: qsTr("COLETOR")
+                value: Math.round(Telemetry.map) + " kPa"
+            }
+
+            InfoCell {
+                visible: infoStrip.width > 560
+                label: qsTr("ACELERADOR")
+                value: Math.round(Telemetry.throttle) + " %"
+            }
+
+            InfoCell {
+                label: qsTr("HODOMETRO")
+                value: Telemetry.odometer.toFixed(1) + " " + Telemetry.distanceUnit
+            }
+        }
     }
 
     // Codigos de falha, quando houver.

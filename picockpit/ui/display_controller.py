@@ -86,8 +86,12 @@ class DisplayController(QObject):
 
     @Property(bool, notify=changed)  # type: ignore[operator]
     def dual(self) -> bool:
-        """Indica se o cluster deve existir como janela propria."""
-        return self.shared or self.screenCount > max(self._cluster, self._console)
+        """Indica se o cluster deve existir como janela propria.
+
+        Dividindo a tela o cluster existe, mas como regiao da janela da
+        multimidia - nao como janela.
+        """
+        return not self.shared and self.screenCount > max(self._cluster, self._console)
 
     @Property(int, notify=changed)  # type: ignore[operator]
     def clusterScreen(self) -> int:  # noqa: N802 - nome consumido pelo QML
@@ -125,11 +129,16 @@ class DisplayController(QObject):
 
     @Property("QVariantMap", notify=changed)  # type: ignore[operator]
     def consoleGeometry(self) -> dict[str, Any]:  # noqa: N802 - nome consumido pelo QML
-        """Posicao e tamanho da janela da multimidia, na tela dela."""
+        """Posicao e tamanho da janela da multimidia, na tela dela.
+
+        Dividindo a tela, a janela da multimidia ocupa o display inteiro e
+        hospeda as duas regioes. No Wayland a aplicacao nao escolhe onde cada
+        janela aparece - posicionamento e prerrogativa do compositor -, entao
+        duas janelas lado a lado so acontecem quando cada uma tem a sua tela.
+        """
         width, height = self._screen_size(self.consoleScreen)
         if self.shared:
-            occupied = round(width * (1 - self._fraction))
-            return {"x": occupied, "y": 0, "width": width - occupied, "height": height}
+            return {"x": 0, "y": 0, "width": width, "height": height}
         if not self.dual:
             return {"x": 0, "y": 0, "width": width, "height": height}
         return {"x": 0, "y": 0, "width": round(width * self._fraction), "height": height}
@@ -138,6 +147,7 @@ class DisplayController(QObject):
     def fullscreenAllowed(self) -> bool:  # noqa: N802 - nome consumido pelo QML
         """Indica se as janelas podem ir a tela cheia.
 
-        Dividindo uma tela, nao podem: tela cheia faria uma cobrir a outra.
+        Sempre podem: dividindo a tela existe uma janela so, que deve ocupar o
+        display inteiro e compor as duas regioes por dentro.
         """
-        return not self.shared
+        return True

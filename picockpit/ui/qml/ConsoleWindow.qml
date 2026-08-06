@@ -56,32 +56,67 @@ Window {
             yScale: canvas.factor
         }
 
-        TopBar {
-            id: topBar
+        // Regiao do cluster, presente apenas quando os dois papeis dividem a
+        // mesma tela. Sao duas regioes de uma janela, e nao duas janelas: o
+        // Wayland nao deixa a aplicacao escolher onde cada janela aparece.
+        Loader {
+            id: clusterRegion
 
-            anchors { top: parent.top; left: parent.left; right: parent.right }
-            height: 52
-            title: hub.pages[hub.currentIndex].label
+            anchors { top: parent.top; left: parent.left; bottom: parent.bottom }
+            width: Display.shared
+                ? Math.round(canvas.width * (1 - Display.consoleFraction))
+                : 0
+            active: Display.shared
+            visible: Display.shared
+            sourceComponent: ClusterView {}
         }
 
-        NavigationRail {
-            id: rail
+        Rectangle {
+            id: divider
 
-            anchors { top: topBar.bottom; left: parent.left; bottom: parent.bottom }
-            width: 92
-            model: hub.pages
-            currentIndex: hub.currentIndex
-            onSelected: function (index) { hub.currentIndex = index }
+            anchors { top: parent.top; bottom: parent.bottom; left: clusterRegion.right }
+            width: Display.shared ? 1 : 0
+            color: Theme.colors.surface_alt
+            visible: Display.shared
         }
 
-        PageHost {
+        Item {
+            id: consoleRegion
+
             anchors {
-                top: topBar.bottom
-                left: rail.right
+                top: parent.top
+                left: divider.right
                 right: parent.right
                 bottom: parent.bottom
             }
-            pageKey: hub.pages[hub.currentIndex].key
+
+            TopBar {
+                id: topBar
+
+                anchors { top: parent.top; left: parent.left; right: parent.right }
+                height: 52
+                title: hub.pages[hub.currentIndex].label
+            }
+
+            NavigationRail {
+                id: rail
+
+                anchors { top: topBar.bottom; left: parent.left; bottom: parent.bottom }
+                width: 92
+                model: hub.pages
+                currentIndex: hub.currentIndex
+                onSelected: function (index) { hub.currentIndex = index }
+            }
+
+            PageHost {
+                anchors {
+                    top: topBar.bottom
+                    left: rail.right
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+                pageKey: hub.pages[hub.currentIndex].key
+            }
         }
     }
 

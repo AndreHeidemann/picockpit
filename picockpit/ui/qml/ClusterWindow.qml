@@ -11,7 +11,6 @@
 import QtQuick
 import QtQuick.Window
 import PiCockpit 1.0
-import "pages"
 
 Window {
     id: cluster
@@ -57,25 +56,13 @@ Window {
             yScale: canvas.factor
         }
 
-        TopBar {
-            id: topBar
-
-            anchors { top: parent.top; left: parent.left; right: parent.right }
-            height: 44
-            title: qsTr("Painel")
-        }
-
-        // Carregado apenas quando a janela existe de fato: com um display so,
-        // montar o painel duas vezes seria pagar duas vezes pela mesma cena.
+        // Carregado apenas quando a janela existe de fato: com a tela
+        // compartilhada, o cluster e composto dentro da janela da multimidia e
+        // montar a cena duas vezes seria pagar duas vezes pela mais cara.
         Loader {
-            anchors {
-                top: topBar.bottom
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
-            }
-            active: Display.dual
-            sourceComponent: DashboardPage {}
+            anchors.fill: parent
+            active: cluster.visible
+            sourceComponent: ClusterView {}
         }
     }
 }

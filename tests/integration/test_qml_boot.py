@@ -74,11 +74,18 @@ def test_both_windows_are_created(stack: dict) -> None:
 
     Sao papeis diferentes com requisitos diferentes - a do motorista nao recebe
     comando - e por isso vivem em janelas separadas, nao em abas.
-    """
-    root = stack["engine"].rootObjects()[0]
 
-    assert root.property("cluster") is not None
-    assert root.property("multimedia") is not None
+    A verificacao passa pelas janelas de topo da aplicacao, e nao pelas
+    propriedades da raiz: `property()` devolve um tipo QML que o PySide nao
+    tem como converter para Python, e o teste falharia por limitacao da ponte,
+    nao por defeito da interface.
+    """
+    from PySide6.QtGui import QGuiApplication
+
+    titles = {window.title() for window in QGuiApplication.allWindows()}
+
+    assert any("Painel" in title for title in titles), titles
+    assert any("Multimidia" in title for title in titles), titles
 
 
 def test_qml_emits_no_warnings(stack: dict) -> None:

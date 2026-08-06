@@ -28,6 +28,8 @@ class Signal(str, Enum):
     VOLTAGE = "voltage"
     ENGINE_LOAD = "engine_load"
     UPTIME = "uptime"
+    GEAR = "gear"
+    ODOMETER = "odometer"
 
 
 #: Unidade canonica de cada sinal. A conversao para unidade de exibicao
@@ -43,6 +45,8 @@ SIGNAL_UNITS: dict[Signal, str] = {
     Signal.VOLTAGE: "V",
     Signal.ENGINE_LOAD: "%",
     Signal.UPTIME: "s",
+    Signal.GEAR: "",
+    Signal.ODOMETER: "km",
 }
 
 #: Faixa fisica plausivel de cada sinal, usada para validar leituras vindas de
@@ -58,6 +62,9 @@ SIGNAL_RANGES: dict[Signal, tuple[float, float]] = {
     Signal.VOLTAGE: (0.0, 18.0),
     Signal.ENGINE_LOAD: (0.0, 100.0),
     Signal.UPTIME: (0.0, 1_000_000.0),
+    # Zero representa ponto morto.
+    Signal.GEAR: (0.0, 8.0),
+    Signal.ODOMETER: (0.0, 9_999_999.0),
 }
 
 

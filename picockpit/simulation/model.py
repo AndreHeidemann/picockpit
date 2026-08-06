@@ -38,6 +38,7 @@ class VehicleModel:
     coolant_temp_c: float = 0.0
     fuel_l: float = 0.0
     uptime_s: float = 0.0
+    odometer_km: float = 0.0
     throttle: float = 0.0
     brake: float = 0.0
 
@@ -179,6 +180,7 @@ class VehicleModel:
 
         acceleration = self._longitudinal_force_n() / self.spec.mass_kg
         self.speed_ms = max(0.0, self.speed_ms + acceleration * dt)
+        self.odometer_km += (self.speed_ms * dt) / 1000.0
 
         # Com o carro parado o motor desacopla e volta para a marcha lenta;
         # em movimento a rotacao e imposta pela transmissao.
@@ -207,4 +209,6 @@ class VehicleModel:
             Signal.VOLTAGE: self._voltage(),
             Signal.ENGINE_LOAD: self._engine_load_pct(),
             Signal.UPTIME: self.uptime_s,
+            Signal.GEAR: float(self.gear if self.speed_ms >= 0.5 else 0),
+            Signal.ODOMETER: self.odometer_km,
         }

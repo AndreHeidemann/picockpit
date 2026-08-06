@@ -9,6 +9,7 @@ Este teste transforma qualquer aviso do QML em falha.
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 import pytest
@@ -50,6 +51,26 @@ def test_main_qml_loads_without_warnings(qt_app) -> None:
     assert engine.rootObjects(), "Main.qml nao carregou"
     assert not problems, "QML emitiu avisos:\n" + "\n".join(problems)
     assert bridges
+
+
+def test_dashboard_reflects_telemetry(qt_app) -> None:
+    """O painel recebe os valores publicados no barramento."""
+    from picockpit.app.main import build_engine
+    from picockpit.core.config import AppConfig
+    from picockpit.core.events import EventBus
+    from picockpit.core.models import Reading, Signal
+    from picockpit.services.telemetry_service import TelemetryService
+    from picockpit.simulation.provider import SimulationProvider
+
+    bus = EventBus()
+    engine, bridges = build_engine(AppConfig(), bus)
+    assert engine.rootObjects()
+
+    service = TelemetryService(SimulationProvider(), bus)
+    asyncio.run(service.handle(Reading(signal=Signal.SPEED, value=88.0, timestamp=1.0)))
+
+    telemetry = bridges[2]
+    assert telemetry.speed == 88.0
 
 
 def test_theme_singleton_is_visible_from_qml(qt_app) -> None:

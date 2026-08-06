@@ -24,6 +24,9 @@ ui = [
     # wheels aarch64 >= 6.8.1 exigem manylinux_2_39 (glibc >= 2.39).
     # 6.8.0.2 e a ultima manylinux_2_31 e coincide com o ciclo LTS do Qt 6.8.
     "PySide6==6.8.0.2",
+    # Integra o laco do asyncio ao do Qt; mantido e usado em producao por
+    # outros projetos PySide.
+    "qasync>=0.27",
 ]
 hardware = [
     "obd>=0.7.2",

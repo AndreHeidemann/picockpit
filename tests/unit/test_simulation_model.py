@@ -151,3 +151,33 @@ def test_model_is_deterministic() -> None:
     second = VehicleModel()
     for _ in range(300):
         assert first.step(0.05, 70.0, 0.0) == second.step(0.05, 70.0, 0.0)
+
+
+def test_gear_reports_neutral_while_stopped() -> None:
+    model = VehicleModel()
+    values = model.step(0.05, 0.0, 0.0)
+
+    assert values[Signal.GEAR] == pytest.approx(0.0)
+
+
+def test_gear_engages_once_moving() -> None:
+    model = VehicleModel()
+    values = run_for(model, seconds=10.0, throttle=80.0)
+
+    assert values[Signal.GEAR] >= 1.0
+
+
+def test_odometer_accumulates_distance() -> None:
+    model = VehicleModel()
+    run_for(model, seconds=60.0, throttle=70.0)
+
+    expected = model.odometer_km
+    assert expected > 0.3
+    assert model.step(0.05, 70.0, 0.0)[Signal.ODOMETER] >= expected
+
+
+def test_odometer_stays_still_when_parked() -> None:
+    model = VehicleModel()
+    values = run_for(model, seconds=20.0, throttle=0.0)
+
+    assert values[Signal.ODOMETER] == pytest.approx(0.0, abs=1e-6)

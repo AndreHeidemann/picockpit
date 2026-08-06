@@ -7,9 +7,16 @@ OBD-II, CAN) sem reescrever a interface.
 
 from __future__ import annotations
 
+import logging
+
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from picockpit.core.theme import DEFAULT_THEME, ThemeName, get_palette
+
+logger = logging.getLogger(__name__)
+
+#: Amostras de FPS agregadas antes de escrever uma linha de log.
+FPS_WINDOW = 5
 
 
 class ThemeController(QObject):
@@ -73,6 +80,7 @@ class AppInfo(QObject):
         self._version = version
         self._env = env
         self._target_fps = target_fps
+        self._fps_samples: list[int] = []
 
     @Property(str, constant=True)  # type: ignore[operator]
     def version(self) -> str:
@@ -88,3 +96,30 @@ class AppInfo(QObject):
     def targetFps(self) -> int:  # noqa: N802 - nome consumido pelo QML
         """Taxa de quadros alvo, usada como referencia pelo medidor de FPS."""
         return self._target_fps
+
+    @Slot(int)
+    def reportFps(self, fps: int) -> None:  # noqa: N802 - nome consumido pelo QML
+        """Registra o FPS medido pela interface.
+
+        Medir FPS olhando a tela pelo Raspberry Pi Connect e enganoso: a
+        codificacao de video do compartilhamento consome o mesmo hardware que
+        se pretende medir. Registrando no log, a medicao continua disponivel
+        com a sessao de visualizacao fechada.
+
+        Args:
+            fps: Quadros renderizados no ultimo segundo.
+        """
+        self._fps_samples.append(fps)
+        if len(self._fps_samples) < FPS_WINDOW:
+            return
+
+        samples = self._fps_samples
+        self._fps_samples = []
+        logger.info(
+            "FPS janela de %ds: min=%d media=%.1f max=%d (alvo=%d)",
+            len(samples),
+            min(samples),
+            sum(samples) / len(samples),
+            max(samples),
+            self._target_fps,
+        )

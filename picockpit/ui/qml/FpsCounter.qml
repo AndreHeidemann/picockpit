@@ -29,6 +29,7 @@ Row {
         onTriggered: {
             counter.fps = frames.count
             frames.count = 0
+            AppInfo.reportFps(counter.fps)
         }
     }
 

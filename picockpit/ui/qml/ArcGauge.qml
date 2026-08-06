@@ -31,6 +31,14 @@ Item {
     readonly property real radius: Math.min(width, height) / 2 - thickness
     readonly property bool inWarning: !isNaN(warningFrom) && value >= warningFrom
 
+    readonly property real warningFraction: isNaN(warningFrom)
+        ? 1
+        : Math.max(0, Math.min(1, (warningFrom - minimum) / (maximum - minimum)))
+    readonly property color dangerColor: Theme.colors.danger
+    readonly property color warningStroke: isNaN(warningFrom)
+        ? "transparent"
+        : Qt.rgba(dangerColor.r, dangerColor.g, dangerColor.b, 0.35)
+
     // Suaviza a chegada das amostras: o provider entrega a 20 Hz, a tela
     // desenha a 60. Sem isto o ponteiro andaria aos saltos.
     Behavior on value {
@@ -59,26 +67,23 @@ Item {
             }
         }
 
-        // Zona de atencao
+        // Zona de atencao.
+        // ShapePath nao e um Item: nao tem opacity nem visible. A transparencia
+        // precisa estar na propria cor, e "apagar" a zona significa pintar de
+        // transparente.
         ShapePath {
-            strokeColor: Theme.colors.danger
+            strokeColor: gauge.warningStroke
             strokeWidth: gauge.thickness
             fillColor: "transparent"
             capStyle: ShapePath.FlatCap
-            strokeStyle: isNaN(gauge.warningFrom) ? ShapePath.DashLine : ShapePath.SolidLine
-            opacity: isNaN(gauge.warningFrom) ? 0 : 0.35
 
             PathAngleArc {
-                readonly property real warnFraction: isNaN(gauge.warningFrom)
-                    ? 1
-                    : (gauge.warningFrom - gauge.minimum) / (gauge.maximum - gauge.minimum)
-
                 centerX: gauge.width / 2
                 centerY: gauge.height / 2
                 radiusX: gauge.radius
                 radiusY: gauge.radius
-                startAngle: gauge.startAngle + gauge.sweepAngle * warnFraction
-                sweepAngle: gauge.sweepAngle * (1 - warnFraction)
+                startAngle: gauge.startAngle + gauge.sweepAngle * gauge.warningFraction
+                sweepAngle: gauge.sweepAngle * (1 - gauge.warningFraction)
             }
         }
 

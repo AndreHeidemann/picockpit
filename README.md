@@ -118,6 +118,16 @@ Xwayland como fallback automatico.
 
 Atalhos: `F11` alterna tela cheia (ensaio de kiosk sem systemd), `Ctrl+Q` encerra.
 
+### Analise estatica do QML
+
+```bash
+# no Pi
+~/picockpit/scripts/lint_qml.sh
+```
+
+O QML degrada em silencio: propriedade inexistente vira aviso em tempo de
+execucao, as vezes apontando para a linha errada. O `qmllint` pega isso antes.
+
 A janela abre em 1280x480, proporcao comum de tela automotiva widescreen.
 O contador de FPS na barra superior mede frames realmente renderizados e serve
 de referencia desde ja para as Etapas 3 e 4.

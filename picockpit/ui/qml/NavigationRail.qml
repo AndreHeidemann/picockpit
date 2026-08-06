@@ -20,7 +20,7 @@ Rectangle {
 
     Column {
         anchors { top: parent.top; topMargin: 16; horizontalCenter: parent.horizontalCenter }
-        spacing: 8
+        spacing: 4
 
         Repeater {
             model: rail.model
@@ -30,12 +30,12 @@ Rectangle {
                 required property var modelData
 
                 width: rail.width
-                height: 72
+                height: 62
 
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 72
-                    height: 60
+                    width: 68
+                    height: 54
                     radius: 12
                     color: index === rail.currentIndex ? Theme.colors.surface_alt : "transparent"
                     border.width: index === rail.currentIndex ? 1 : 0

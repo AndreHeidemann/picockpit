@@ -25,6 +25,7 @@ ApplicationWindow {
         { key: "dashboard", label: qsTr("Painel"), glyph: "◴" },
         { key: "performance", label: qsTr("Tempos"), glyph: "⏱" },
         { key: "charts",    label: qsTr("Graficos"), glyph: "◫" },
+        { key: "trips",     label: qsTr("Viagens"), glyph: "▤" },
         { key: "media",     label: qsTr("Media"),  glyph: "▶" },
         { key: "settings",  label: qsTr("Ajustes"), glyph: "⚙" }
     ]
@@ -37,6 +38,7 @@ ApplicationWindow {
         switch (root.pages[index].key) {
         case "performance": return performancePage
         case "charts":   return chartsPage
+        case "trips":    return tripsPage
         case "media":    return mediaPage
         case "settings": return settingsPage
         default:         return dashboardPage
@@ -46,6 +48,7 @@ ApplicationWindow {
     Component { id: dashboardPage; DashboardPage {} }
     Component { id: performancePage; PerformancePage {} }
     Component { id: chartsPage;    ChartsPage {} }
+    Component { id: tripsPage;     TripsPage {} }
     Component { id: mediaPage;     MediaPage {} }
     Component { id: settingsPage;  SettingsPage {} }
 
@@ -72,7 +75,7 @@ ApplicationWindow {
     NavigationRail {
         id: rail
         anchors { top: topBar.bottom; left: parent.left; bottom: parent.bottom }
-        width: 96
+        width: 92
         model: root.pages
         currentIndex: root.currentIndex
         onSelected: function (index) { root.currentIndex = index }

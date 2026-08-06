@@ -19,14 +19,18 @@ from picockpit import __version__
 from picockpit.core.config import AppConfig, load_config
 from picockpit.core.events import EventBus
 from picockpit.core.logging_setup import setup_logging
+from picockpit.data.database import connect
+from picockpit.data.trip_repository import TripRepository
 from picockpit.services.chronometer import ChronometerService
 from picockpit.services.providers import TelemetryProvider
+from picockpit.services.trip_recorder import TripRecorder
 from picockpit.simulation.provider import SimulationProvider
 from picockpit.ui.bridge import AppInfo, ThemeController
 from picockpit.ui.chart_controller import ChartController
 from picockpit.ui.chrono_controller import ChronoController
 from picockpit.ui.settings_controller import SettingsController
 from picockpit.ui.telemetry_controller import TelemetryController
+from picockpit.ui.trips_controller import TripsController
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +113,14 @@ def build_engine(
     charts = ChartController(event_bus)
     settings = SettingsController(provider or create_provider(app_config), event_bus)
 
+    repository = TripRepository(connect(app_config.database_path))
+    recorder = TripRecorder(event_bus, repository)
+    trips = TripsController(repository, event_bus)
+    # O gravador precisa saber o combustivel para registrar na viagem; a
+    # tela de ajustes e quem sabe quando ele muda.
+    settings.changed.connect(lambda: recorder.set_fuel(settings.fuel))
+    recorder.set_fuel(settings.fuel)
+
     # Singletons registrados, e nao context properties: nomes capitalizados em
     # context property nao resolvem de forma confiavel dentro de componentes
     # carregados de arquivo, e falham silenciosamente como `null`. O singleton
@@ -124,10 +136,11 @@ def build_engine(
     qmlRegisterSingletonInstance(ChronoController, QML_URI, 1, 0, "Chrono", chrono)
     qmlRegisterSingletonInstance(ChartController, QML_URI, 1, 0, "Chart", charts)
     qmlRegisterSingletonInstance(SettingsController, QML_URI, 1, 0, "Settings", settings)
+    qmlRegisterSingletonInstance(TripsController, QML_URI, 1, 0, "Trips", trips)
 
     engine = QQmlApplicationEngine()
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
-    return engine, [theme, info, telemetry, chrono, chronometer, charts, settings]
+    return engine, [theme, info, telemetry, chrono, chronometer, charts, settings, recorder, trips]
 
 
 def main() -> int:
@@ -178,10 +191,17 @@ def main() -> int:
         app_config.sample_interval_ms,
     )
 
+    recorder = bridges[7]
+
     with loop:
         task = loop.create_task(service.run())
         app.aboutToQuit.connect(task.cancel)
         loop.run_forever()
+
+        # Encerra a viagem em andamento antes de fechar o laco: sem isso, um
+        # trecho rodado ate o desligamento simplesmente nao existiria no
+        # historico.
+        loop.run_until_complete(recorder.finish())
 
     del bridges
     return 0

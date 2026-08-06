@@ -207,3 +207,28 @@ def test_reset_clears_the_session() -> None:
     assert lap.count == 0
     assert not lap.running
     assert lap.current == 0.0
+
+
+def test_run_is_abandoned_after_the_timeout() -> None:
+    """Arrancada que nunca alcanca o alvo nao pode contar para sempre."""
+    timer = AccelerationTimer(target_kmh=100.0, timeout_s=10.0)
+    feed(timer, [(0.0, 0.0), (1.0, 40.0)])
+    assert timer.running
+
+    timer.update(12.0, 60.0)
+
+    assert not timer.running
+    assert timer.last_seconds is None
+
+
+def test_timeout_requires_a_new_stop_to_rearm() -> None:
+    timer = AccelerationTimer(target_kmh=100.0, timeout_s=5.0)
+    feed(timer, [(0.0, 0.0), (1.0, 40.0), (7.0, 60.0)])
+
+    assert not timer.running
+    assert feed(timer, [(8.0, 120.0)]) == []
+
+    # Rampa curta de proposito: com timeout de 5 s, uma arrancada de 12 s
+    # seria abandonada antes de cruzar o alvo.
+    results = feed(timer, [(9.0, 0.0), *ramp(9.0, 4.0, 120.0)])
+    assert len(results) == 1

@@ -17,6 +17,7 @@ class Phase(str, Enum):
 
     IDLE = "idle"
     ACCELERATE = "accelerate"
+    SPRINT = "sprint"
     CRUISE = "cruise"
     BRAKE = "brake"
 
@@ -25,12 +26,26 @@ class Phase(str, Enum):
 PHASE_DURATION: dict[Phase, float] = {
     Phase.IDLE: 6.0,
     Phase.ACCELERATE: 14.0,
+    Phase.SPRINT: 24.0,
     Phase.CRUISE: 20.0,
     Phase.BRAKE: 8.0,
 }
 
 #: Sequencia ciclica das fases.
-PHASE_ORDER: tuple[Phase, ...] = (Phase.IDLE, Phase.ACCELERATE, Phase.CRUISE, Phase.BRAKE)
+#:
+#: A arrancada a fundo existe para exercitar o que o ciclo urbano nunca
+#: alcanca: marchas altas, rotacao proxima da linha vermelha e o cronometro de
+#: 0-100. Sem ela o painel so seria visto na faixa de 0 a 70 km/h.
+PHASE_ORDER: tuple[Phase, ...] = (
+    Phase.IDLE,
+    Phase.ACCELERATE,
+    Phase.CRUISE,
+    Phase.BRAKE,
+    Phase.IDLE,
+    Phase.SPRINT,
+    Phase.CRUISE,
+    Phase.BRAKE,
+)
 
 
 @dataclass(slots=True)
@@ -76,6 +91,8 @@ class DriverProfile:
             return 0.0, 0.0
         if self.phase is Phase.ACCELERATE:
             return 55.0 + self._rng.uniform(-10.0, 30.0), 0.0
+        if self.phase is Phase.SPRINT:
+            return 100.0, 0.0
         if self.phase is Phase.CRUISE:
             return 22.0 + self._rng.uniform(-6.0, 6.0), 0.0
         return 0.0, 45.0 + self._rng.uniform(-10.0, 25.0)

@@ -65,9 +65,14 @@ class AccelerationTimer:
 
     Attributes:
         target_kmh: Velocidade alvo da medicao.
+        timeout_s: Tempo maximo de uma medicao valida. Sem esse limite, uma
+            arrancada que nunca alcanca o alvo - transito, subida, alvo alto
+            demais para o carro - deixaria o cronometro contando para sempre,
+            exibindo um numero que nao vai virar resultado nenhum.
     """
 
     target_kmh: float = 100.0
+    timeout_s: float = 40.0
 
     last_seconds: float | None = None
     best_seconds: float | None = None
@@ -131,6 +136,11 @@ class AccelerationTimer:
                 )
                 self.running = True
                 self._armed = False
+            return None
+
+        if timestamp - self._start_time > self.timeout_s:
+            self.running = False
+            self._armed = False
             return None
 
         if speed_kmh < self.target_kmh:

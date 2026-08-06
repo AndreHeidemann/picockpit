@@ -62,3 +62,12 @@ def test_braking_phase_releases_the_throttle() -> None:
             assert throttle < 15.0
             return
     pytest.fail("fase de frenagem nao foi alcancada")
+
+
+def test_sprint_phase_uses_full_throttle() -> None:
+    driver = DriverProfile()
+    for _ in range(6000):
+        throttle, _ = driver.step(0.05)
+        if driver.phase is Phase.SPRINT and throttle > 90.0:
+            return
+    pytest.fail("fase de arrancada a fundo nao foi alcancada")

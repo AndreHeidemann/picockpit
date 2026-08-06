@@ -1,6 +1,7 @@
 // Ajustes. A tela completa e escopo da Etapa 12; aqui apenas a troca de tema,
 // que ja valida a ponte Python -> QML de ponta a ponta.
 import QtQuick
+import PiCockpit 1.0
 
 Item {
     id: page

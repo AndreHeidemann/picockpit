@@ -1,6 +1,7 @@
 // Medidor de FPS baseado em frames efetivamente renderizados.
 // So tem significado quando medido no hardware real do Pi 5.
 import QtQuick
+import PiCockpit 1.0
 
 Row {
     id: counter

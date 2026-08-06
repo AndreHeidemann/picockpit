@@ -12,7 +12,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonInstance
 from PySide6.QtQuickControls2 import QQuickStyle
 
 from picockpit import __version__
@@ -23,6 +23,9 @@ from picockpit.ui.bridge import AppInfo, ThemeController
 logger = logging.getLogger(__name__)
 
 QML_ROOT = Path(__file__).resolve().parent.parent / "ui" / "qml"
+
+#: Namespace QML dos objetos expostos pelo Python.
+QML_URI = "PiCockpit"
 
 
 def build_engine(app_config: AppConfig) -> tuple[QQmlApplicationEngine, list[object]]:
@@ -38,12 +41,18 @@ def build_engine(app_config: AppConfig) -> tuple[QQmlApplicationEngine, list[obj
     engine = QQmlApplicationEngine()
 
     theme = ThemeController(app_config.theme)
-    info = AppInfo(version=__version__, env=app_config.env)
+    info = AppInfo(
+        version=__version__,
+        env=app_config.env,
+        target_fps=app_config.target_fps,
+    )
 
-    context = engine.rootContext()
-    context.setContextProperty("Theme", theme)
-    context.setContextProperty("AppInfo", info)
-    context.setContextProperty("targetFps", app_config.target_fps)
+    # Singletons registrados, e nao context properties: nomes capitalizados em
+    # context property nao resolvem de forma confiavel dentro de componentes
+    # carregados de arquivo, e falham silenciosamente como `null`. O singleton
+    # e explicito, resolvido em tempo de compilacao do QML e verificavel.
+    qmlRegisterSingletonInstance(ThemeController, QML_URI, 1, 0, "Theme", theme)
+    qmlRegisterSingletonInstance(AppInfo, QML_URI, 1, 0, "AppInfo", info)
 
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
     return engine, [theme, info]

@@ -2,6 +2,7 @@
 // Existe para que a navegacao e o tema possam ser validados na Etapa 1 sem
 // antecipar funcionalidade das etapas seguintes.
 import QtQuick
+import PiCockpit 1.0
 
 Item {
     id: page

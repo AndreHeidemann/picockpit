@@ -4,6 +4,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Window
+import PiCockpit 1.0
 import "pages"
 
 ApplicationWindow {

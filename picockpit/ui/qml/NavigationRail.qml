@@ -1,5 +1,6 @@
 // Trilha de navegacao lateral, dimensionada para toque (alvos de 72 px).
 import QtQuick
+import PiCockpit 1.0
 
 Rectangle {
     id: rail

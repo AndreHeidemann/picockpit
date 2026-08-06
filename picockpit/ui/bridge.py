@@ -61,11 +61,18 @@ class ThemeController(QObject):
 class AppInfo(QObject):
     """Metadados estaticos da aplicacao, usados na barra superior."""
 
-    def __init__(self, version: str, env: str, parent: QObject | None = None) -> None:
-        """Inicializa com versao e ambiente correntes."""
+    def __init__(
+        self,
+        version: str,
+        env: str,
+        target_fps: int = 60,
+        parent: QObject | None = None,
+    ) -> None:
+        """Inicializa com versao, ambiente e alvo de FPS correntes."""
         super().__init__(parent)
         self._version = version
         self._env = env
+        self._target_fps = target_fps
 
     @Property(str, constant=True)  # type: ignore[operator]
     def version(self) -> str:
@@ -76,3 +83,8 @@ class AppInfo(QObject):
     def env(self) -> str:
         """Ambiente logico em execucao."""
         return self._env
+
+    @Property(int, constant=True)  # type: ignore[operator]
+    def targetFps(self) -> int:  # noqa: N802 - nome consumido pelo QML
+        """Taxa de quadros alvo, usada como referencia pelo medidor de FPS."""
+        return self._target_fps

@@ -1,5 +1,6 @@
 // Barra superior: titulo da pagina, relogio e contador de FPS.
 import QtQuick
+import PiCockpit 1.0
 
 Rectangle {
     id: bar
@@ -27,7 +28,7 @@ Rectangle {
 
         FpsCounter {
             anchors.verticalCenter: parent.verticalCenter
-            target: targetFps
+            target: AppInfo.targetFps
         }
 
         Text {

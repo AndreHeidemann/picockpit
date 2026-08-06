@@ -1,6 +1,7 @@
 // Painel digital. Instrumentacao real e escopo da Etapa 3.
 import QtQuick
 import ".."
+import PiCockpit 1.0
 
 PagePlaceholder {
     heading: qsTr("Painel Digital")

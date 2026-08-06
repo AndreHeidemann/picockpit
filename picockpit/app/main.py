@@ -31,6 +31,9 @@ QML_ROOT = Path(__file__).resolve().parent.parent / "ui" / "qml"
 #: Namespace QML dos objetos expostos pelo Python.
 QML_URI = "PiCockpit"
 
+#: Guarda de engine unico. Ver ``build_engine``.
+_engine_built = False
+
 
 def create_provider(app_config: AppConfig) -> TelemetryProvider:
     """Instancia o provider de telemetria configurado.
@@ -70,7 +73,23 @@ def build_engine(
     Returns:
         O engine e a lista de objetos de ponte, que precisam ser mantidos vivos
         pelo chamador para nao serem coletados pelo garbage collector.
+
+    Raises:
+        RuntimeError: Se chamado mais de uma vez no mesmo processo.
     """
+    global _engine_built
+
+    # Objetos registrados com qmlRegisterSingletonInstance pertencem a um unico
+    # engine. Um segundo engine no mesmo processo recebe os singletons como
+    # `null`, e a arvore QML falha com mensagens que apontam para o lugar
+    # errado. Falhar alto aqui e melhor do que caçar o sintoma depois.
+    if _engine_built:
+        raise RuntimeError(
+            "build_engine ja foi chamado neste processo; singletons QML "
+            "pertencem a um unico engine"
+        )
+    _engine_built = True
+
     theme = ThemeController(app_config.theme)
     info = AppInfo(
         version=__version__,

@@ -1,10 +1,13 @@
 """Teste de fumaca da camada QML. Executa apenas no Raspberry Pi.
 
-Existe por causa de duas falhas reais da Etapa 1: context properties com nome
-capitalizado resolvendo como ``null`` dentro de componentes carregados de
-arquivo, e singletons registrados depois do engine. Ambas passavam despercebidas
-porque o QML degrada silenciosamente - a tela abre, so que com estado errado.
-Este teste transforma qualquer aviso do QML em falha.
+Existe por causa de tres falhas reais das Etapas 1 e 3: context properties com
+nome capitalizado resolvendo como ``null``, singletons registrados depois do
+engine, e ``opacity`` atribuido a um ShapePath. As tres degradavam em silencio
+ou apontavam para a linha errada. Aqui, qualquer aviso do QML e falha.
+
+O engine e construido uma unica vez por processo: objetos registrados com
+``qmlRegisterSingletonInstance`` pertencem a um unico engine, e um segundo
+engine receberia os singletons como ``null``.
 """
 
 from __future__ import annotations
@@ -25,16 +28,17 @@ def qt_app():
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtGui import QGuiApplication
 
-    app = QGuiApplication.instance() or QGuiApplication([])
-    yield app
+    yield QGuiApplication.instance() or QGuiApplication([])
 
 
-def test_main_qml_loads_without_warnings(qt_app) -> None:
-    """A arvore QML inteira compila e nao emite um unico aviso."""
+@pytest.fixture(scope="module")
+def stack(qt_app):
+    """Constroi a arvore QML uma unica vez, capturando avisos do Qt."""
     from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 
     from picockpit.app.main import build_engine
     from picockpit.core.config import AppConfig
+    from picockpit.core.events import EventBus
 
     problems: list[str] = []
 
@@ -42,48 +46,64 @@ def test_main_qml_loads_without_warnings(qt_app) -> None:
         if mode in (QtMsgType.QtWarningMsg, QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg):
             problems.append(message)
 
+    bus = EventBus()
     previous = qInstallMessageHandler(handler)
     try:
-        engine, bridges = build_engine(AppConfig())
+        engine, bridges = build_engine(AppConfig(), bus)
     finally:
         qInstallMessageHandler(previous)
 
-    assert engine.rootObjects(), "Main.qml nao carregou"
-    assert not problems, "QML emitiu avisos:\n" + "\n".join(problems)
-    assert bridges
+    theme, _info, telemetry = bridges
+    yield {
+        "engine": engine,
+        "bus": bus,
+        "theme": theme,
+        "telemetry": telemetry,
+        "problems": problems,
+    }
 
 
-def test_dashboard_reflects_telemetry(qt_app) -> None:
-    """O painel recebe os valores publicados no barramento."""
-    from picockpit.app.main import build_engine
-    from picockpit.core.config import AppConfig
-    from picockpit.core.events import EventBus
+def test_main_qml_loads(stack: dict) -> None:
+    """A arvore QML inteira compila e produz um objeto raiz."""
+    assert stack["engine"].rootObjects(), "Main.qml nao carregou"
+
+
+def test_qml_emits_no_warnings(stack: dict) -> None:
+    """Nenhum aviso do QML durante a construcao da interface."""
+    assert not stack["problems"], "QML emitiu avisos:\n" + "\n".join(stack["problems"])
+
+
+def test_dashboard_receives_telemetry(stack: dict) -> None:
+    """Valores publicados no barramento chegam ao controlador da UI."""
     from picockpit.core.models import Reading, Signal
     from picockpit.services.telemetry_service import TelemetryService
     from picockpit.simulation.provider import SimulationProvider
 
-    bus = EventBus()
-    engine, bridges = build_engine(AppConfig(), bus)
-    assert engine.rootObjects()
-
-    service = TelemetryService(SimulationProvider(), bus)
+    service = TelemetryService(SimulationProvider(), stack["bus"])
     asyncio.run(service.handle(Reading(signal=Signal.SPEED, value=88.0, timestamp=1.0)))
+    asyncio.run(service.handle(Reading(signal=Signal.GEAR, value=3.0, timestamp=1.0)))
 
-    telemetry = bridges[2]
-    assert telemetry.speed == 88.0
+    assert stack["telemetry"].speed == 88.0
+    assert stack["telemetry"].gearLabel == "3"
 
 
-def test_theme_singleton_is_visible_from_qml(qt_app) -> None:
-    """O singleton ``Theme`` resolve dentro de um componente e expoe a paleta."""
-    from PySide6.QtQml import QQmlApplicationEngine
-
-    from picockpit.app.main import build_engine
-    from picockpit.core.config import AppConfig
+def test_theme_switching_updates_the_palette(stack: dict) -> None:
+    """O singleton de tema troca a paleta em tempo de execucao."""
     from picockpit.core.theme import get_palette
 
-    engine, bridges = build_engine(AppConfig(theme="sport"))
-    assert isinstance(engine, QQmlApplicationEngine)
+    theme = stack["theme"]
+    theme.activate("sport")
 
-    theme = bridges[0]
     assert theme.name == "sport"
     assert theme.colors["primary"] == get_palette("sport").primary
+
+    theme.activate("normal")
+
+
+def test_second_engine_is_rejected(stack: dict) -> None:
+    """Construir um segundo engine falha alto em vez de degradar em silencio."""
+    from picockpit.app.main import build_engine
+    from picockpit.core.config import AppConfig
+
+    with pytest.raises(RuntimeError, match="um unico engine"):
+        build_engine(AppConfig())

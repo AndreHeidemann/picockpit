@@ -23,6 +23,7 @@ from picockpit.services.chronometer import ChronometerService
 from picockpit.services.providers import TelemetryProvider
 from picockpit.simulation.provider import SimulationProvider
 from picockpit.ui.bridge import AppInfo, ThemeController
+from picockpit.ui.chart_controller import ChartController
 from picockpit.ui.chrono_controller import ChronoController
 from picockpit.ui.telemetry_controller import TelemetryController
 
@@ -102,6 +103,7 @@ def build_engine(
     telemetry = TelemetryController(event_bus)
     chronometer = ChronometerService(event_bus)
     chrono = ChronoController(event_bus, chronometer)
+    charts = ChartController(event_bus)
 
     # Singletons registrados, e nao context properties: nomes capitalizados em
     # context property nao resolvem de forma confiavel dentro de componentes
@@ -116,10 +118,11 @@ def build_engine(
     qmlRegisterSingletonInstance(AppInfo, QML_URI, 1, 0, "AppInfo", info)
     qmlRegisterSingletonInstance(TelemetryController, QML_URI, 1, 0, "Telemetry", telemetry)
     qmlRegisterSingletonInstance(ChronoController, QML_URI, 1, 0, "Chrono", chrono)
+    qmlRegisterSingletonInstance(ChartController, QML_URI, 1, 0, "Chart", charts)
 
     engine = QQmlApplicationEngine()
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
-    return engine, [theme, info, telemetry, chrono, chronometer]
+    return engine, [theme, info, telemetry, chrono, chronometer, charts]
 
 
 def main() -> int:

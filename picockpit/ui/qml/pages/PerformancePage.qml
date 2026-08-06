@@ -52,9 +52,12 @@ Item {
                 Text {
                     text: Chrono.accelRunning ? Chrono.accelElapsed : Chrono.accelLast
                     color: Chrono.accelRunning ? Theme.colors.primary : Theme.colors.text
+                    // O fator de largura e menor que o de altura de
+                    // proposito: o texto tem ate cinco caracteres ("15.06"),
+                    // entao a largura se esgota muito antes da altura.
                     font {
                         pixelSize: Math.round(Math.min(
-                            page.cardHeight * 0.34, page.cardWidth * 0.34))
+                            page.cardHeight * 0.34, page.cardWidth * 0.22))
                         weight: Font.Light
                     }
                 }
@@ -117,14 +120,18 @@ Item {
                 Text {
                     text: Chrono.lapRunning ? Chrono.lapCurrent : Chrono.lapLast
                     color: Chrono.lapRunning ? Theme.colors.primary : Theme.colors.text
+                    // O fator de largura e menor que o de altura de
+                    // proposito: o texto tem ate cinco caracteres ("15.06"),
+                    // entao a largura se esgota muito antes da altura.
                     font {
                         pixelSize: Math.round(Math.min(
-                            page.cardHeight * 0.34, page.cardWidth * 0.34))
+                            page.cardHeight * 0.34, page.cardWidth * 0.22))
                         weight: Font.Light
                     }
                 }
 
-                Row {
+                Flow {
+                    width: page.cardWidth - 40
                     spacing: 16
 
                     Row {
@@ -165,7 +172,8 @@ Item {
                     height: 12
                 }
 
-                Row {
+                Flow {
+                    width: page.cardWidth - 40
                     spacing: 10
 
                     ActionButton {

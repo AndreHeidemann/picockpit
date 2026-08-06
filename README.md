@@ -124,6 +124,35 @@ de referencia desde ja para as Etapas 3 e 4.
 
 ---
 
+## Etapa 2 - Simulador
+
+Telemetria sintetica com coerencia fisica entre os sinais: o acelerador move o
+motor, a transmissao impoe a rotacao a partir da velocidade, a carga aquece o
+liquido de arrefecimento e o fluxo de ar consome combustivel.
+
+```
+DriverProfile  -> acelerador e freio ao longo de um ciclo de conducao
+VehicleModel   -> step(dt) puro: dinamica, cambio, termica e consumo
+SimulationProvider -> implementa TelemetryProvider
+TelemetryService   -> valida, consolida VehicleState e publica no EventBus
+```
+
+Para ver os numeros correndo, sem interface:
+
+```bash
+# no container (WSL)
+docker compose exec backend python scripts/simulate.py 20 3
+
+# ou no Pi
+cd ~/picockpit && PYTHONPATH=. ~/picockpit-venv/bin/python scripts/simulate.py 20 3
+```
+
+O segundo argumento e a escala de tempo: `3` faz o ciclo de conducao correr
+tres vezes mais rapido que o relogio, util para exercitar todas as fases sem
+esperar.
+
+---
+
 ## Decisoes tecnicas relevantes
 
 ### PySide6 fixado em 6.8.0.2

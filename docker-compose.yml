@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: picockpit-backend:dev
+    container_name: picockpit-backend
+    working_dir: /app
+    volumes:
+      # Bind mount para hot-reload: editar no host reflete no container.
+      - .:/app
+      # Volume nomeado protege os metadados do editable install de serem
+      # sobrescritos pelo bind mount do host.
+      - picockpit-egg-info:/app/picockpit.egg-info
+    environment:
+      PICOCKPIT_ENV: development
+      PICOCKPIT_LOG_LEVEL: DEBUG
+    command: sleep infinity
+
+volumes:
+  picockpit-egg-info:

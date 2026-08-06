@@ -1,0 +1,14 @@
+# Configuracao base. Variaveis PICOCKPIT_* sobrescrevem qualquer valor daqui.
+env = "development"
+log_level = "INFO"
+log_dir = "logs"
+
+# Provider ativo: simulation | obd | can
+provider = "simulation"
+
+# Alvo de UI. So tem significado quando medido no hardware real do Pi 5.
+target_fps = 60
+sample_interval_ms = 50
+
+database_path = "data/picockpit.db"
+theme = "normal"

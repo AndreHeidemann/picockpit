@@ -17,16 +17,13 @@ Window {
     id: hub
 
     readonly property var target: Qt.application.screens[Display.consoleScreen]
+    readonly property var box: Display.consoleGeometry
 
-    // Sozinha na tela, ocupa tudo. Ao lado do cluster, cede a maior parte para
-    // a projecao.
-    readonly property bool solo: !Display.dual
-    readonly property int targetWidth: !target
-        ? 420
-        : (solo ? target.width : Math.round(target.width * Display.consoleFraction))
-
-    width: Math.max(320, targetWidth)
-    height: target ? target.height : 720
+    // Sozinha na tela ocupa tudo; ao lado do cluster cede a maior parte para a
+    // projecao; dividindo a tela com o cluster fica na faixa da direita. Quem
+    // decide e o controlador.
+    width: Math.max(320, box.width)
+    height: box.height
     visible: true
     color: Theme.colors.background
     title: qsTr("PiCockpit OS - Multimidia")
@@ -34,9 +31,12 @@ Window {
     screen: target
     // Sem decoracao no carro; em bancada a janela continua movel.
     flags: AppInfo.kiosk ? Qt.Window | Qt.FramelessWindowHint : Qt.Window
+    visibility: AppInfo.kiosk && Display.fullscreenAllowed
+        ? Window.FullScreen
+        : Window.Windowed
 
-    x: 0
-    y: 0
+    x: box.x
+    y: box.y
 
     property int currentIndex: 0
 

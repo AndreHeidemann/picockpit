@@ -17,11 +17,15 @@ Window {
     id: cluster
 
     readonly property var target: Qt.application.screens[Display.clusterScreen]
+    readonly property var box: Display.clusterGeometry
 
-    width: target ? target.width : 1280
-    height: target ? target.height : 480
-    x: 0
-    y: 0
+    // Geometria vem do controlador, que sabe se a tela e exclusiva ou dividida
+    // com a multimidia. Deixar cada janela decidir sozinha era como as duas
+    // acabavam empilhadas.
+    width: box.width
+    height: box.height
+    x: box.x
+    y: box.y
     color: Theme.colors.background
     title: qsTr("PiCockpit OS - Painel")
 
@@ -34,7 +38,9 @@ Window {
     // combustivel na mesma imagem.
     visibility: !Display.dual
         ? Window.Hidden
-        : (AppInfo.kiosk ? Window.FullScreen : Window.Windowed)
+        : (AppInfo.kiosk && Display.fullscreenAllowed
+            ? Window.FullScreen
+            : Window.Windowed)
     visible: Display.dual
 
     Item {

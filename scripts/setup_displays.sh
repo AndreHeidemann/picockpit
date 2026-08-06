@@ -5,9 +5,17 @@
 # fica sem output e nao ha o que compartilhar pelo Raspberry Pi Connect - o
 # desenvolvimento passa a exigir um monitor dedicado ao Pi.
 #
-# O sufixo `D` em `video=` liga a saida digital independentemente da deteccao
-# de hotplug. Funciona porque o config.txt ja tem `disable_fw_kms_setup=1`, que
-# entrega o controle de modo ao kernel em vez do firmware.
+# Dois sufixos importam em `video=`:
+#
+#   D  liga a saida digital independentemente da deteccao de hotplug
+#   M  manda o kernel calcular a temporizacao pela norma VESA CVT
+#
+# O `M` nao e opcional para modos automotivos. Sem monitor nao ha EDID, e o
+# driver so conhece a lista de modos padrao - 1280x480 nao esta nela, e a saida
+# cai para 1024x768 silenciosamente. Com `M`, o kernel gera a temporizacao.
+#
+# Tudo isso depende de `disable_fw_kms_setup=1` no config.txt, que entrega o
+# controle de modo ao kernel em vez do firmware.
 #
 # Precisa de sudo e de reiniciar. Executar no Raspberry Pi.
 set -euo pipefail
@@ -19,19 +27,13 @@ CLUSTER_MODE="${CLUSTER_MODE:-1280x480@60}"
 # Multimidia: onde ficam navegacao, ajustes e, no futuro, a projecao.
 CONSOLE_MODE="${CONSOLE_MODE:-1920x1080@60}"
 
-FORCED="video=HDMI-A-1:${CLUSTER_MODE}D video=HDMI-A-2:${CONSOLE_MODE}D"
+# Formato: <largura>x<altura>M@<taxa>D
+FORCED="video=HDMI-A-1:${CLUSTER_MODE%@*}M@${CLUSTER_MODE#*@}D"
+FORCED="$FORCED video=HDMI-A-2:${CONSOLE_MODE%@*}M@${CONSOLE_MODE#*@}D"
 
 if [[ $EUID -ne 0 ]]; then
   echo "Precisa de sudo: sudo $0" >&2
   exit 1
-fi
-
-if grep -q "video=HDMI-A-1" "$CMDLINE"; then
-  echo "As saidas ja estao forcadas em $CMDLINE:"
-  grep -o 'video=[^ ]*' "$CMDLINE"
-  echo
-  echo "Para trocar de modo, rode primeiro: sudo $0 --remover"
-  exit 0
 fi
 
 if [[ "${1:-}" == "--remover" ]]; then
@@ -42,6 +44,11 @@ if [[ "${1:-}" == "--remover" ]]; then
 fi
 
 cp "$CMDLINE" "$CMDLINE.picockpit-bak"
+
+# Remove qualquer forcamento anterior antes de escrever o novo, para o script
+# poder ser rodado de novo com outros modos sem duplicar parametros.
+sed -i -E 's/ ?video=HDMI-A-[12]:[^ ]*//g' "$CMDLINE"
+
 # cmdline.txt e uma linha unica: os parametros entram no fim dela, sem quebra.
 sed -i "1s|\$| ${FORCED}|" "$CMDLINE"
 

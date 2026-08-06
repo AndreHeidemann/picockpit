@@ -22,7 +22,11 @@ kiosk = false
 
 # Displays. O do motorista mostra so instrumentos e nao recebe toque; o da
 # multimidia concentra navegacao, ajustes e a projecao do CarPlay/Android Auto.
-# Com um monitor so, as duas janelas dividem a mesma tela para desenvolvimento.
+#
+# Apontar os dois para o MESMO indice divide aquela tela entre as duas janelas.
+# E o arranjo de desenvolvimento: o compartilhamento do Raspberry Pi Connect
+# exibe uma saida so e nao permite escolher qual, entao com as janelas em saidas
+# diferentes metade do sistema fica invisivel remotamente.
 cluster_screen = 0
 console_screen = 1
 

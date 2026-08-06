@@ -290,6 +290,39 @@ ainda vivem no journal.
 
 ---
 
+## Displays sem monitor
+
+Sem monitor conectado o Pi desabilita a saida HDMI, a sessao grafica fica sem
+output e o Raspberry Pi Connect nao tem o que compartilhar - o desenvolvimento
+passaria a exigir um monitor dedicado ao Pi.
+
+O script forca as duas saidas a existirem, simulando o arranjo final: cluster
+widescreen numa, multimidia na outra.
+
+```bash
+sudo ~/picockpit/scripts/setup_displays.sh
+sudo reboot
+
+# depois de reiniciar
+wlr-randr
+```
+
+Para voltar atras: `sudo ~/picockpit/scripts/setup_displays.sh --remover`.
+O `cmdline.txt` original fica em `cmdline.txt.picockpit-bak`.
+
+Modos podem ser trocados por variavel:
+
+```bash
+sudo CLUSTER_MODE=1920x720@60 CONSOLE_MODE=1280x800@60 \
+  ~/picockpit/scripts/setup_displays.sh
+```
+
+Com duas saidas, o compartilhamento de tela do Connect normalmente exibe apenas
+uma delas. Por isso o cluster fica em `HDMI-A-1`, que costuma ser a primeira -
+e a que aparece.
+
+---
+
 ## Acesso remoto
 
 O desenvolvimento acontece por SSH para comandos e **Raspberry Pi Connect** para

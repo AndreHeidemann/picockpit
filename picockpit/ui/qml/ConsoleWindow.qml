@@ -40,7 +40,16 @@ Window {
 
     property int currentIndex: 0
 
-    readonly property var pages: Layout.pages
+    // O painel so entra na navegacao quando nao existe cluster. Havendo tela
+    // ou regiao de instrumentos, repetir o painel aqui e pior do que inutil:
+    // ele ocupa uma fracao estreita da tela e fica ilegivel, competindo com o
+    // mesmo conteudo exibido do lado certo.
+    readonly property bool hasCluster: Display.dual || Display.shared
+    readonly property var pages: hasCluster
+        ? Layout.pages.filter(function (page) { return page.key !== "dashboard" })
+        : Layout.pages
+
+    onHasClusterChanged: currentIndex = 0
 
     Item {
         id: canvas

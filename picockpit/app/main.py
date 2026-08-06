@@ -38,8 +38,6 @@ def build_engine(app_config: AppConfig) -> tuple[QQmlApplicationEngine, list[obj
         O engine e a lista de objetos de ponte, que precisam ser mantidos vivos
         pelo chamador para nao serem coletados pelo garbage collector.
     """
-    engine = QQmlApplicationEngine()
-
     theme = ThemeController(app_config.theme)
     info = AppInfo(
         version=__version__,
@@ -51,9 +49,15 @@ def build_engine(app_config: AppConfig) -> tuple[QQmlApplicationEngine, list[obj
     # context property nao resolvem de forma confiavel dentro de componentes
     # carregados de arquivo, e falham silenciosamente como `null`. O singleton
     # e explicito, resolvido em tempo de compilacao do QML e verificavel.
+    #
+    # A ORDEM IMPORTA: o registro precisa acontecer ANTES de instanciar o
+    # QQmlApplicationEngine. Registrar depois deixa o modulo num estado
+    # meio-resolvido e o erro reportado e enganoso ("Cannot assign object to
+    # list property data", apontando para um Text qualquer).
     qmlRegisterSingletonInstance(ThemeController, QML_URI, 1, 0, "Theme", theme)
     qmlRegisterSingletonInstance(AppInfo, QML_URI, 1, 0, "AppInfo", info)
 
+    engine = QQmlApplicationEngine()
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
     return engine, [theme, info]
 

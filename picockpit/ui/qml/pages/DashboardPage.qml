@@ -55,7 +55,7 @@ Item {
 
         value: Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate
         minimum: 0
-        maximum: Telemetry.moving ? 25 : 12
+        maximum: Telemetry.moving ? 30 : 12
         thickness: 20
         label: qsTr("CONSUMO")
         units: Telemetry.moving ? "km/L" : "L/h"
@@ -65,7 +65,9 @@ Item {
         mirrored: true
         scaleSteps: 6
         accent: Theme.colors.success
-        accentDim: Theme.colors.primary_dim
+        // O gradiente precisa ser da mesma familia da cor de acento; usar a
+        // ponta escura do tema aqui misturaria verde com azul.
+        accentDim: Qt.darker(Theme.colors.success, 2.4)
     }
 
     // Bloco central: velocidade e marcha.

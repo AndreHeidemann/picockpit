@@ -35,7 +35,7 @@ Item {
     property int scaleSteps: 7
     property real scaleFactor: 1.0
     property int scaleDecimals: 0
-    property int separatorCount: 24
+    property int separatorCount: 30
 
     readonly property string style: Theme.gaugeStyle
     readonly property bool segmented: style === "segment"
@@ -124,7 +124,16 @@ Item {
             // Referencia por id, e nao por `parent`: elementos de caminho nao
             // sao Items e nao tem pai navegavel. `parent.sweep` resolveria
             // como undefined e o setor sumiria.
-            readonly property real sweep: gauge.sweepAngle * gauge.fraction
+            //
+            // O avanco e quantizado em segmentos inteiros por dois motivos. E
+            // o comportamento correto de um mostrador segmentado - ele acende
+            // segmento a segmento, nao por fracao. E, principalmente, prende a
+            // geometria: sem isso o setor seria re-triangulado a cada quadro
+            // enquanto a animacao corre, e um preenchimento custa bem mais
+            // caro que um traco para re-tesselar.
+            readonly property real sweep: gauge.sweepAngle
+                * Math.round(gauge.fraction * gauge.separatorCount)
+                / gauge.separatorCount
 
             strokeColor: "transparent"
 

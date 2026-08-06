@@ -10,17 +10,25 @@ import PiCockpit 1.0
 Item {
     id: page
 
-    Row {
+    // Na barra de comando a pagina recebe uma coluna estreita. Dois cartoes
+    // lado a lado viram duas colunas ilegiveis; empilhados, continuam
+    // utilizaveis. O limiar e a largura em que um cartao ainda cabe inteiro.
+    readonly property bool narrow: width < 620
+    readonly property real cardWidth: narrow ? width - 48 : (width - 72) / 2
+    readonly property real cardHeight: narrow ? (height - 60) / 2 : height - 48
+
+    Grid {
         anchors {
             fill: parent
             margins: 24
         }
-        spacing: 24
+        columns: page.narrow ? 1 : 2
+        spacing: page.narrow ? 12 : 24
 
         // Arrancada
         Rectangle {
-            width: (page.width - 72) / 2
-            height: parent.height
+            width: page.cardWidth
+            height: page.cardHeight
             radius: 16
             color: Theme.colors.surface
             border.width: 1
@@ -44,7 +52,11 @@ Item {
                 Text {
                     text: Chrono.accelRunning ? Chrono.accelElapsed : Chrono.accelLast
                     color: Chrono.accelRunning ? Theme.colors.primary : Theme.colors.text
-                    font { pixelSize: Math.round(page.height * 0.30); weight: Font.Light }
+                    font {
+                        pixelSize: Math.round(Math.min(
+                            page.cardHeight * 0.34, page.cardWidth * 0.34))
+                        weight: Font.Light
+                    }
                 }
 
                 Text {
@@ -80,8 +92,8 @@ Item {
 
         // Voltas
         Rectangle {
-            width: (page.width - 72) / 2
-            height: parent.height
+            width: page.cardWidth
+            height: page.cardHeight
             radius: 16
             color: Theme.colors.surface
             border.width: 1
@@ -105,7 +117,11 @@ Item {
                 Text {
                     text: Chrono.lapRunning ? Chrono.lapCurrent : Chrono.lapLast
                     color: Chrono.lapRunning ? Theme.colors.primary : Theme.colors.text
-                    font { pixelSize: Math.round(page.height * 0.30); weight: Font.Light }
+                    font {
+                        pixelSize: Math.round(Math.min(
+                            page.cardHeight * 0.34, page.cardWidth * 0.34))
+                        weight: Font.Light
+                    }
                 }
 
                 Row {

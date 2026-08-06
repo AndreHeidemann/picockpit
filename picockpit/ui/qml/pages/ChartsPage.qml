@@ -10,12 +10,16 @@ import PiCockpit 1.0
 Item {
     id: page
 
-    readonly property real cellWidth: (width - 48 - 12) / 2
-    readonly property real cellHeight: (height - 48 - 12) / 2
+    // Coluna unica quando estreita: dois graficos lado a lado numa faixa de
+    // 30% da tela nao mostram forma nenhuma, so ruido.
+    readonly property int columns: width < 620 ? 1 : 2
+    readonly property int rows: 4 / columns
+    readonly property real cellWidth: (width - 48 - (columns - 1) * 12) / columns
+    readonly property real cellHeight: (height - 48 - (rows - 1) * 12) / rows
 
     Grid {
         anchors { fill: parent; margins: 24 }
-        columns: 2
+        columns: page.columns
         spacing: 12
 
         LineChart {

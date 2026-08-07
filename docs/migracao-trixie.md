@@ -45,7 +45,19 @@ como esta maquina estava configurada.
 
 1. Gravar o **Raspberry Pi OS 13 (Trixie), 64 bits, com desktop** pelo Raspberry
    Pi Imager, em outro cartao se possivel - o cartao antigo vira backup fisico
-2. No Imager, pre-configurar: nome do host, usuario, Wi-Fi e **SSH habilitado**
+2. No Imager, pre-configurar - os valores da maquina atual:
+
+   | Campo | Valor |
+   | --- | --- |
+   | Hostname | `raspberrypi5-heidemann` |
+   | Usuario | `andreheidemann` |
+   | Wi-Fi | `CAHEIDE_2.4G`, pais `BR` |
+   | Rede | DHCP, sem IP fixo (eth0 caiu em `.54`, wlan0 em `.183`) |
+   | SSH | habilitado, **colando a chave publica do PC** |
+
+   Colar a chave publica no Imager evita repetir a dança de `authorized_keys`
+   com permissoes `700`/`600` que ja custou uma sessao inteira - e e o que faz
+   o `git push pi` funcionar logo no primeiro boot.
 3. Primeiro boot **com monitor conectado** - o passo seguinte e o que devolve o
    acesso sem monitor, e ate ele existir nao ha o que compartilhar
 
@@ -63,8 +75,20 @@ Connect nao tem tela para compartilhar. Numa instalacao limpa nao ha nem os
 modos forcados nem o `disable_fw_kms_setup=1` que os torna efetivos - o script
 cuida dos dois.
 
+O codigo chega pelo repositorio bare, empurrado do PC - assim o Pi nao precisa
+de credencial de GitHub nenhuma. A chave publica do PC ja foi instalada pelo
+Imager, entao o `push` funciona no primeiro boot.
+
 ```bash
-git clone https://github.com/<seu-usuario>/picockpit.git ~/picockpit
+# no Pi
+git init --bare ~/picockpit.git
+
+# no PC (WSL)
+git push pi HEAD:refs/heads/main
+
+# no Pi
+git clone ~/picockpit.git ~/picockpit
+git -C ~/picockpit config core.fileMode false
 sudo bash ~/picockpit/scripts/setup_displays.sh
 sudo reboot
 ```
@@ -79,25 +103,23 @@ So entao desconectar o monitor e seguir pelo Connect.
 
 ## Restaurar o PiCockpit
 
+O codigo e o repositorio bare ja existem, do passo anterior.
+
 ```bash
-# 1. Repositorio bare de deploy
-git init --bare ~/picockpit.git
-
-# 2. Git nao versiona modo de arquivo aqui: o repositorio vem do Windows sem
-#    bit de execucao e o install_service.sh o adiciona, o que faria o proximo
-#    `git pull` abortar por mudanca de modo.
-git -C ~/picockpit config core.fileMode false
-
-# 3. Ambiente - escolhe sozinho o constraint pela glibc do sistema
+# 1. Ambiente - escolhe sozinho o constraint pela glibc do sistema
 ~/picockpit/scripts/setup_pi.sh
 
-# 4. Banco, configuracoes e drop-ins de systemd
+# 2. Banco, configuracoes e drop-ins de systemd
+#    (copiar antes o .tar.gz do PC:  scp ~/picockpit-*.tar.gz <pi>:~/ )
 ~/picockpit/scripts/restore.sh ~/picockpit-<data>.tar.gz
 
-# 5. Servico
+# 3. Servico
 ~/picockpit/scripts/install_service.sh
 systemctl --user start picockpit
 ```
+
+Docker nao volta. Ele existia no cartao antigo por outros projetos e ocupava
+dezenas de gigabytes; o backend headless roda no PC, nunca no Pi.
 
 ## Verificar depois
 

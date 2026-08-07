@@ -32,8 +32,15 @@ def qt_app():
 
 
 @pytest.fixture(scope="module")
-def stack(qt_app):
-    """Constroi a arvore QML uma unica vez, capturando avisos do Qt."""
+def stack(qt_app, tmp_path_factory):
+    """Constroi a arvore QML uma unica vez, capturando avisos do Qt.
+
+    O banco e temporario. Antes o teste subia sobre o banco real do Pi e
+    herdava as preferencias gravadas ali: com o sistema imperial salvo, a
+    asercao de velocidade passou a receber 54.68 no lugar de 88, e a falha
+    parecia do codigo novo quando era do ambiente. Teste que le a configuracao
+    da maquina nao e reproduzivel - e ainda por cima escreveria nela.
+    """
     from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 
     from picockpit.app.main import build_engine
@@ -47,9 +54,10 @@ def stack(qt_app):
             problems.append(message)
 
     bus = EventBus()
+    config = AppConfig(database_path=tmp_path_factory.mktemp("db") / "picockpit.db")
     previous = qInstallMessageHandler(handler)
     try:
-        engine, bridges = build_engine(AppConfig(), bus)
+        engine, bridges = build_engine(config, bus)
     finally:
         qInstallMessageHandler(previous)
 
@@ -123,11 +131,17 @@ def test_qml_emits_no_warnings(stack: dict) -> None:
 
 
 def test_dashboard_receives_telemetry(stack: dict) -> None:
-    """Valores publicados no barramento chegam ao controlador da UI."""
+    """Valores publicados no barramento chegam ao controlador da UI.
+
+    O sistema de unidades e fixado aqui de proposito: a propriedade exposta ao
+    QML e convertida, entao comparar com o valor canonico so faz sentido em
+    metrico. Sem isto o teste passa ou falha conforme a preferencia gravada.
+    """
     from picockpit.core.models import Reading, Signal
     from picockpit.services.telemetry_service import TelemetryService
     from picockpit.simulation.provider import SimulationProvider
 
+    stack["settings"].setUnits("metric")
     service = TelemetryService(SimulationProvider(), stack["bus"])
     asyncio.run(service.handle(Reading(signal=Signal.SPEED, value=88.0, timestamp=1.0)))
     asyncio.run(service.handle(Reading(signal=Signal.GEAR, value=3.0, timestamp=1.0)))

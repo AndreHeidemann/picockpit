@@ -77,6 +77,47 @@ class ThemeController(QObject):
         """Nomes de todos os temas disponiveis."""
         return [theme.value for theme in ThemeName]
 
+    # Os tres acessos abaixo existem para a previa da tela de ajustes, que
+    # precisa desenhar um tema que nao e o ativo. Sao consultas puras a uma
+    # tabela estatica, por isso sao slots e nao propriedades: nada aqui muda
+    # quando o tema ativo muda.
+
+    @Slot(str, result="QVariantMap")
+    def paletteOf(self, name: str) -> dict[str, str]:  # noqa: N802 - nome consumido pelo QML
+        """Paleta de um tema qualquer.
+
+        Args:
+            name: Identificador do tema.
+
+        Returns:
+            Cores correspondentes.
+        """
+        return get_theme(name).palette.to_dict()
+
+    @Slot(str, result="QVariantMap")
+    def gaugeOf(self, name: str) -> dict[str, float | int]:  # noqa: N802 - consumido pelo QML
+        """Geometria do mostrador de um tema qualquer.
+
+        Args:
+            name: Identificador do tema.
+
+        Returns:
+            Proporcoes e tipografia correspondentes.
+        """
+        return get_theme(name).gauge.to_dict()
+
+    @Slot(str, result=str)
+    def styleOf(self, name: str) -> str:  # noqa: N802 - nome consumido pelo QML
+        """Estilo do mostrador de um tema qualquer.
+
+        Args:
+            name: Identificador do tema.
+
+        Returns:
+            ``segment`` ou ``arc``.
+        """
+        return get_theme(name).gauge_style.value
+
     @Slot(str)
     def activate(self, name: str) -> None:
         """Ativa o tema informado, ignorando nomes desconhecidos.

@@ -29,16 +29,28 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Row {
+            Text {
+                text: qsTr("Cada modo desenha o proprio instrumento: abertura, espessura e segmentacao mudam junto com a cor")
+                color: Theme.colors.text_muted
+                font.pixelSize: 12
+                width: page.width - 48
+                wrapMode: Text.WordWrap
+            }
+
+            // Flow e nao Row: na coluna estreita da multimidia dividida cinco
+            // previas de 132 px nao cabem lado a lado, e uma Row as empurraria
+            // para fora da tela em silencio.
+            Flow {
+                width: page.width - 48
                 spacing: 10
 
                 Repeater {
                     model: Theme.available
 
-                    delegate: OptionChip {
+                    delegate: ThemeSwatch {
                         required property string modelData
 
-                        text: Theme.labelOf(modelData)
+                        themeName: modelData
                         selected: modelData === Theme.name
                         onActivated: Settings.setTheme(modelData)
                     }

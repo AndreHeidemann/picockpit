@@ -76,6 +76,42 @@ class Palette:
 
 
 @dataclass(frozen=True, slots=True)
+class GaugeGeometry:
+    """Desenho do mostrador, separado da paleta.
+
+    Sem isto um tema so troca de cor, e a promessa do modulo - modo esportivo
+    nao e o modo conforto pintado de vermelho - fica sem lastro. E aqui que os
+    cinco modos deixam de ser o mesmo instrumento.
+
+    Attributes:
+        sweep_degrees: Abertura do arco. Mais fechado parece instrumento de
+            precisao; mais aberto ocupa a tela e parece esportivo.
+        thickness_ratio: Espessura do anel como fracao do raio externo.
+        separator_count: Quantidade de segmentos. Zero desenha o anel inteiro,
+            sem vaos - tambem e o passo de quantizacao do avanco, de modo que
+            valores altos custam mais re-tesselagem por quadro.
+        scale_steps_factor: Multiplica a quantidade de marcas numericas pedida
+            pela pagina. Zero remove a escala, deixando so o numeral central.
+        value_weight: Peso da fonte do numeral central, na escala do Qt
+            (25 Light, 50 Normal, 63 DemiBold).
+        value_ratio: Tamanho do numeral central como fracao do raio externo.
+        tick_width: Largura dos separadores angulares, em pixels logicos.
+    """
+
+    sweep_degrees: float = 240.0
+    thickness_ratio: float = 0.16
+    separator_count: int = 30
+    scale_steps_factor: float = 1.0
+    value_weight: int = 25
+    value_ratio: float = 0.44
+    tick_width: int = 2
+
+    def to_dict(self) -> dict[str, float | int]:
+        """Serializa a geometria para consumo pela camada QML."""
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
 class ThemeDefinition:
     """Tema completo: identidade, paleta e geometria do mostrador.
 
@@ -84,12 +120,14 @@ class ThemeDefinition:
         label: Nome exibido na interface.
         palette: Cores do tema.
         gauge_style: Geometria do mostrador principal.
+        gauge: Proporcoes e tipografia do mostrador.
     """
 
     name: ThemeName
     label: str
     palette: Palette
     gauge_style: GaugeStyle
+    gauge: GaugeGeometry = GaugeGeometry()
 
 
 #: Temas registrados. `normal` e o padrao de fabrica.
@@ -98,6 +136,15 @@ THEMES: dict[ThemeName, ThemeDefinition] = {
         name=ThemeName.NORMAL,
         label="Simple",
         gauge_style=GaugeStyle.SEGMENT,
+        # Anel liso e escala rarefeita: o modo padrao e o que o motorista olha
+        # de relance, entao carrega o minimo que responde "quanto falta".
+        gauge=GaugeGeometry(
+            sweep_degrees=240.0,
+            thickness_ratio=0.14,
+            separator_count=0,
+            scale_steps_factor=0.5,
+            value_ratio=0.46,
+        ),
         palette=Palette(
             background="#05070C",
             surface="#0B111A",
@@ -116,6 +163,17 @@ THEMES: dict[ThemeName, ThemeDefinition] = {
         name=ThemeName.SPORT,
         label="Track",
         gauge_style=GaugeStyle.SEGMENT,
+        # Anel grosso, muito segmento e numeral pesado: em uso esportivo a
+        # leitura e periferica, feita pelo tamanho da mancha acesa e nao pelo
+        # numero. A abertura maior faz o conta-giros ocupar o campo de visao.
+        gauge=GaugeGeometry(
+            sweep_degrees=264.0,
+            thickness_ratio=0.21,
+            separator_count=44,
+            value_weight=63,
+            value_ratio=0.50,
+            tick_width=3,
+        ),
         palette=Palette(
             background="#0A0603",
             surface="#150C05",
@@ -134,6 +192,16 @@ THEMES: dict[ThemeName, ThemeDefinition] = {
         name=ThemeName.DARK,
         label="Technology",
         gauge_style=GaugeStyle.SEGMENT,
+        # Segmentacao fina com separadores de um pixel: de longe parece uma
+        # barra continua, de perto se resolve em tracos. E o unico modo em que
+        # a densidade e o assunto.
+        gauge=GaugeGeometry(
+            sweep_degrees=240.0,
+            thickness_ratio=0.17,
+            separator_count=60,
+            value_weight=50,
+            tick_width=1,
+        ),
         palette=Palette(
             background="#08060A",
             surface="#120A14",
@@ -152,6 +220,14 @@ THEMES: dict[ThemeName, ThemeDefinition] = {
         name=ThemeName.MINIMAL,
         label="Comfort",
         gauge_style=GaugeStyle.ARC,
+        # Arco fino e mais fechado. Instrumento discreto, que devolve a tela
+        # para o numeral central.
+        gauge=GaugeGeometry(
+            sweep_degrees=220.0,
+            thickness_ratio=0.055,
+            separator_count=0,
+            value_ratio=0.42,
+        ),
         palette=Palette(
             background="#06080B",
             surface="#0C1116",
@@ -170,6 +246,16 @@ THEMES: dict[ThemeName, ThemeDefinition] = {
         name=ThemeName.NIGHT,
         label="Night",
         gauge_style=GaugeStyle.ARC,
+        # Menos area acesa que qualquer outro modo. A escala rarefeita nao e
+        # economia de espaco: cada numero aceso a mais e um ponto brilhante no
+        # campo de visao de quem esta com a pupila dilatada.
+        gauge=GaugeGeometry(
+            sweep_degrees=200.0,
+            thickness_ratio=0.045,
+            separator_count=0,
+            scale_steps_factor=0.5,
+            value_ratio=0.40,
+        ),
         palette=Palette(
             # Luminancia baixa de proposito: o painel nao pode ofuscar o
             # motorista a noite, e vermelho e ambar preservam a visao escura.

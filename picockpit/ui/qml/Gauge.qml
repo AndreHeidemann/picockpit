@@ -24,7 +24,6 @@ Item {
     // Zona de atencao, em unidades de valor. NaN desliga.
     property real warningFrom: NaN
 
-    property real thickness: 22
     property string label: ""
     property string units: ""
     property string valueText: Math.round(value).toString()
@@ -32,16 +31,31 @@ Item {
     property color accentDim: Theme.colors.primary_dim
     // Espelha o mostrador para que ele abra na direcao do centro do painel.
     property bool mirrored: false
+    // Marcas pedidas pela pagina; o tema pode rarefaze-las ou remove-las.
     property int scaleSteps: 7
     property real scaleFactor: 1.0
     property int scaleDecimals: 0
-    property int separatorCount: 30
 
     readonly property string style: Theme.gaugeStyle
     readonly property bool segmented: style === "segment"
 
-    readonly property real startAngle: mirrored ? 30 : 150
-    readonly property real sweepAngle: mirrored ? -240 : 240
+    // Proporcoes vem do tema. A pagina diz o que o mostrador significa; o tema
+    // diz como ele e desenhado.
+    readonly property real thickness: Math.max(
+        4, Math.round(outerRadius * Theme.gauge.thickness_ratio))
+    readonly property int separatorCount: Theme.gauge.separator_count
+    readonly property int effectiveScaleSteps: Math.round(
+        scaleSteps * Theme.gauge.scale_steps_factor)
+
+    // O vao fica sempre embaixo, centrado em 90 graus: e a abertura que cresce
+    // ou fecha em torno dele, para o par de mostradores continuar simetrico em
+    // qualquer tema. Zero graus aponta para a direita e o sentido positivo e
+    // horario, porque o eixo Y cresce para baixo.
+    readonly property real sweepMagnitude: Theme.gauge.sweep_degrees
+    readonly property real startAngle: mirrored
+        ? sweepMagnitude / 2 - 90
+        : 270 - sweepMagnitude / 2
+    readonly property real sweepAngle: mirrored ? -sweepMagnitude : sweepMagnitude
 
     readonly property real fraction: maximum > minimum
         ? Math.max(0, Math.min(1, (value - minimum) / (maximum - minimum)))
@@ -125,15 +139,20 @@ Item {
             // sao Items e nao tem pai navegavel. `parent.sweep` resolveria
             // como undefined e o setor sumiria.
             //
-            // O avanco e quantizado em segmentos inteiros por dois motivos. E
-            // o comportamento correto de um mostrador segmentado - ele acende
+            // O avanco e quantizado em passos inteiros por dois motivos. E o
+            // comportamento correto de um mostrador segmentado - ele acende
             // segmento a segmento, nao por fracao. E, principalmente, prende a
             // geometria: sem isso o setor seria re-triangulado a cada quadro
             // enquanto a animacao corre, e um preenchimento custa bem mais
             // caro que um traco para re-tesselar.
+            //
+            // Nos temas de anel liso nao ha separador, mas a quantizacao
+            // continua: e ela que segura os 60 FPS, nao a estetica. O passo
+            // fino de 48 mantem o movimento continuo ao olho.
+            readonly property int steps: gauge.separatorCount > 0
+                ? gauge.separatorCount : 48
             readonly property real sweep: gauge.sweepAngle
-                * Math.round(gauge.fraction * gauge.separatorCount)
-                / gauge.separatorCount
+                * Math.round(gauge.fraction * steps) / steps
 
             strokeColor: "transparent"
 
@@ -197,7 +216,7 @@ Item {
             readonly property real angle: gauge.startAngle
                 + gauge.sweepAngle * (index / gauge.separatorCount)
 
-            width: 2
+            width: Theme.gauge.tick_width
             height: gauge.thickness
             color: Theme.colors.background
             antialiasing: true
@@ -215,9 +234,12 @@ Item {
         visible: !gauge.segmented
         preferredRendererType: Shape.CurveRenderer
 
+        // No estilo de arco o anel e o proprio traco, entao a espessura do
+        // tema vira largura de linha - e o que separa Comfort de Night sem
+        // trocar nenhuma cor.
         ShapePath {
             strokeColor: Theme.colors.surface_alt
-            strokeWidth: 3
+            strokeWidth: gauge.thickness
             fillColor: "transparent"
             capStyle: ShapePath.RoundCap
 
@@ -233,7 +255,7 @@ Item {
 
         ShapePath {
             strokeColor: gauge.inWarning ? Theme.colors.danger : gauge.accent
-            strokeWidth: 3
+            strokeWidth: gauge.thickness
             fillColor: "transparent"
             capStyle: ShapePath.RoundCap
 
@@ -254,12 +276,13 @@ Item {
     // ----------------------------------------------------------- escala
 
     Repeater {
-        model: gauge.scaleSteps
+        // Menos de duas marcas nao e escala, e um numero solto no anel.
+        model: gauge.effectiveScaleSteps >= 2 ? gauge.effectiveScaleSteps : 0
 
         delegate: Text {
             required property int index
 
-            readonly property real position: index / (gauge.scaleSteps - 1)
+            readonly property real position: index / (gauge.effectiveScaleSteps - 1)
             readonly property real angle: gauge.startAngle + gauge.sweepAngle * position
             readonly property real distance: gauge.innerRadius - 14
             readonly property bool warned: !isNaN(gauge.warningFrom)
@@ -287,7 +310,10 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: gauge.valueText
             color: gauge.inWarning ? Theme.colors.danger : Theme.colors.text
-            font { pixelSize: Math.round(gauge.outerRadius * 0.44); weight: Font.Light }
+            font {
+                pixelSize: Math.round(gauge.outerRadius * Theme.gauge.value_ratio)
+                weight: Theme.gauge.value_weight
+            }
         }
 
         Text {

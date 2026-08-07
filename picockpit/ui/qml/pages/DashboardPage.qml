@@ -53,7 +53,6 @@ Item {
         minimum: 0
         maximum: 7000
         warningFrom: 5500
-        thickness: 20
         label: qsTr("RPM")
         units: "rpm"
         scaleSteps: 8
@@ -79,7 +78,6 @@ Item {
         value: Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate
         minimum: 0
         maximum: Telemetry.moving ? dashboard.consumptionCeiling : dashboard.fuelRateCeiling
-        thickness: 20
         label: qsTr("CONSUMO")
         units: Telemetry.moving ? Telemetry.consumptionUnit : Telemetry.fuelRateUnit
         valueText: (Telemetry.moving ? Telemetry.consumption : Telemetry.fuelRate).toFixed(1)

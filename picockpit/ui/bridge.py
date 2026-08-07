@@ -55,6 +55,11 @@ class ThemeController(QObject):
         """Geometria do mostrador principal: ``segment`` ou ``arc``."""
         return self._theme.gauge_style.value
 
+    @Property("QVariantMap", notify=changed)  # type: ignore[operator]
+    def gauge(self) -> dict[str, float | int]:
+        """Proporcoes e tipografia do mostrador do tema ativo."""
+        return self._theme.gauge.to_dict()
+
     @Slot(str, result=str)
     def labelOf(self, name: str) -> str:  # noqa: N802 - nome consumido pelo QML
         """Nome de exibicao de um tema qualquer.

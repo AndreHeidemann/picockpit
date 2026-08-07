@@ -21,6 +21,7 @@
 set -euo pipefail
 
 CMDLINE="${CMDLINE:-/boot/firmware/cmdline.txt}"
+CONFIG="${CONFIG:-/boot/firmware/config.txt}"
 
 # Cluster do motorista: proporcao automotiva widescreen.
 CLUSTER_MODE="${CLUSTER_MODE:-1280x480@60}"
@@ -41,6 +42,16 @@ if [[ "${1:-}" == "--remover" ]]; then
   sed -i -E 's/ ?video=HDMI-A-[12]:[^ ]*//g' "$CMDLINE"
   echo "Saidas forcadas removidas. Reinicie para aplicar."
   exit 0
+fi
+
+# O `video=` do cmdline so vale se o kernel estiver no comando do modo. Sem
+# isso o firmware configura o display antes e o parametro vira decoracao. Numa
+# instalacao limpa a linha pode nao existir, e a falha e silenciosa: o Pi sobe,
+# so nao tem saida nenhuma para compartilhar.
+if ! grep -qE '^\s*disable_fw_kms_setup=1' "$CONFIG"; then
+  cp "$CONFIG" "$CONFIG.picockpit-bak"
+  printf '\n# PiCockpit: entrega o controle de modo ao kernel\ndisable_fw_kms_setup=1\n' >> "$CONFIG"
+  echo "disable_fw_kms_setup=1 adicionado a $CONFIG"
 fi
 
 cp "$CMDLINE" "$CMDLINE.picockpit-bak"

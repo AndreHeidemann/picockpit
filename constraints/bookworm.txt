@@ -1,0 +1,11 @@
+# Raspberry Pi OS 12 (Bookworm) - glibc 2.36.
+#
+# As wheels aarch64 do PySide6 a partir de 6.8.1 sao marcadas
+# `manylinux_2_39`, ou seja, exigem glibc >= 2.39. O pip descarta essas wheels
+# por incompatibilidade de tag, mas o erro que ele produz quando nao sobra
+# nenhuma opcao e obscuro. Fixar aqui torna a escolha explicita e o diagnostico
+# imediato.
+#
+# 6.8.0.2 e a ultima manylinux_2_31 e coincide com o ciclo LTS do Qt 6.8.
+PySide6==6.8.0.2
+shiboken6==6.8.0.2

@@ -32,4 +32,26 @@ if [[ -d "$extracted/configs" ]]; then
   echo "configuracoes restauradas"
 fi
 
+if [[ -d "$extracted/systemd" ]]; then
+  dropin_dir="$HOME/.config/systemd/user/picockpit.service.d"
+  mkdir -p "$dropin_dir"
+  cp "$extracted/systemd/." "$dropin_dir/" -r
+  systemctl --user daemon-reload
+  echo "drop-ins de systemd restaurados"
+fi
+
+# O que exige sudo fica como instrucao, nao como acao: um script de restauracao
+# que mexe sozinho no boot e uma forma barata de deixar o Pi sem subir.
+if [[ -f "$extracted/sistema.txt" ]]; then
+  echo
+  echo "==> Retrato do sistema de origem (conferir manualmente):"
+  sed 's/^/    /' "$extracted/sistema.txt"
+  if grep -q '^video=' "$extracted/sistema.txt"; then
+    echo
+    echo "    Havia modos de video forcados. Para reproduzi-los:"
+    echo "    sudo bash $REPO_DIR/scripts/setup_displays.sh"
+  fi
+fi
+
+echo
 echo "Pronto. Suba com: systemctl --user start picockpit"

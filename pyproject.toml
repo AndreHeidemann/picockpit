@@ -20,10 +20,12 @@ dependencies = []
 
 [project.optional-dependencies]
 ui = [
-    # Teto imposto pelo glibc 2.36 do Raspberry Pi OS 12 (Bookworm):
-    # wheels aarch64 >= 6.8.1 exigem manylinux_2_39 (glibc >= 2.39).
-    # 6.8.0.2 e a ultima manylinux_2_31 e coincide com o ciclo LTS do Qt 6.8.
-    "PySide6==6.8.0.2",
+    # Faixa larga aqui, versao exata em `constraints/`: o Bookworm (glibc 2.36)
+    # so aceita 6.8.0.2 e o Trixie (glibc 2.41) roda a serie 6.11. Fixar um
+    # numero unico neste arquivo obrigaria a editar o repositorio no meio da
+    # migracao - justamente quando o Pi esta recem-formatado e sem monitor.
+    # O `scripts/setup_pi.sh` escolhe o arquivo de constraint pela glibc.
+    "PySide6>=6.8,<6.12",
     # Integra o laco do asyncio ao do Qt; mantido e usado em producao por
     # outros projetos PySide.
     "qasync>=0.27",

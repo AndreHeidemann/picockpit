@@ -22,7 +22,7 @@ Estes itens vivem apenas no Pi e somem com a formatacao:
 
 - [ ] **Codigo**: `git push origin main` (GitHub) e conferir que o commit apareceu
 - [ ] **Repositorio bare** `~/picockpit.git`: e o remote de deploy; sera recriado
-- [ ] **Banco de viagens**: `scripts/backup.sh` e copiar o `.tar.gz` para o PC
+- [ ] **Banco de viagens, configuracoes e drop-ins**: `scripts/backup.sh`
 
 ```bash
 # no Pi
@@ -30,9 +30,13 @@ cd ~/picockpit
 ./scripts/backup.sh
 ls -lt ~/picockpit-backups | head -3
 
-# no PC (WSL)
+# no PC (WSL) - tirar a copia de dentro do cartao que sera apagado
 scp <usuario>@<ip-do-pi>:~/picockpit-backups/picockpit-*.tar.gz ~/
 ```
+
+O arquivo carrega tambem `sistema.txt`, com os modos de video forcados e as
+versoes de origem. Vale abrir e ler antes de comecar - e a unica anotacao de
+como esta maquina estava configurada.
 
 - [ ] Anotar a configuracao de rede (Wi-Fi, IP fixo se houver)
 - [ ] Lembrar que o Raspberry Pi Connect precisara ser vinculado de novo
@@ -42,7 +46,8 @@ scp <usuario>@<ip-do-pi>:~/picockpit-backups/picockpit-*.tar.gz ~/
 1. Gravar o **Raspberry Pi OS 13 (Trixie), 64 bits, com desktop** pelo Raspberry
    Pi Imager, em outro cartao se possivel - o cartao antigo vira backup fisico
 2. No Imager, pre-configurar: nome do host, usuario, Wi-Fi e **SSH habilitado**
-3. Primeiro boot, e entao:
+3. Primeiro boot **com monitor conectado** - o passo seguinte e o que devolve o
+   acesso sem monitor, e ate ele existir nao ha o que compartilhar
 
 ```bash
 sudo apt update && sudo apt full-upgrade -y
@@ -51,20 +56,42 @@ rpi-connect on
 rpi-connect signin      # vincula o dispositivo de novo
 ```
 
+## Devolver o acesso remoto antes de tudo
+
+Sem monitor, o Pi desliga a saida HDMI, a sessao grafica fica sem output e o
+Connect nao tem tela para compartilhar. Numa instalacao limpa nao ha nem os
+modos forcados nem o `disable_fw_kms_setup=1` que os torna efetivos - o script
+cuida dos dois.
+
+```bash
+git clone https://github.com/<seu-usuario>/picockpit.git ~/picockpit
+sudo bash ~/picockpit/scripts/setup_displays.sh
+sudo reboot
+```
+
+Depois do reboot, ainda com monitor, conferir:
+
+```bash
+wlr-randr        # devem aparecer HDMI-A-1 e HDMI-A-2 nos modos pedidos
+```
+
+So entao desconectar o monitor e seguir pelo Connect.
+
 ## Restaurar o PiCockpit
 
 ```bash
 # 1. Repositorio bare de deploy
 git init --bare ~/picockpit.git
 
-# 2. Codigo
-git clone https://github.com/<seu-usuario>/picockpit.git ~/picockpit
-# ou, do PC:  git push pi HEAD:refs/heads/main  e depois clonar do bare
+# 2. Git nao versiona modo de arquivo aqui: o repositorio vem do Windows sem
+#    bit de execucao e o install_service.sh o adiciona, o que faria o proximo
+#    `git pull` abortar por mudanca de modo.
+git -C ~/picockpit config core.fileMode false
 
-# 3. Ambiente
+# 3. Ambiente - escolhe sozinho o constraint pela glibc do sistema
 ~/picockpit/scripts/setup_pi.sh
 
-# 4. Banco de viagens
+# 4. Banco, configuracoes e drop-ins de systemd
 ~/picockpit/scripts/restore.sh ~/picockpit-<data>.tar.gz
 
 # 5. Servico
@@ -83,12 +110,15 @@ QT_QPA_PLATFORM=offscreen ~/picockpit-venv/bin/python -m pytest -q
 ~/picockpit/scripts/lint_qml.sh
 ```
 
+- [ ] Copiar a versao instalada do PySide6 para `constraints/trixie.txt` como
+      pin exato e fazer commit. Ate aqui o arquivo carrega uma faixa, porque a
+      versao so se conhece depois da primeira instalacao real.
+
 ## O que provavelmente vai quebrar
 
-**PySide6 6.11 nao e 6.8.** A trava do `pyproject.toml` precisa sair, e a API de
-`QtQuick.Shapes` mudou entre as versoes - os mostradores sao o ponto a conferir
-primeiro. O teste de fumaca da interface existe justamente para isso: ele
-transforma qualquer aviso do QML em falha.
+**PySide6 6.11 nao e 6.8.** A API de `QtQuick.Shapes` mudou entre as versoes -
+os mostradores sao o ponto a conferir primeiro. O teste de fumaca da interface
+existe justamente para isso: ele transforma qualquer aviso do QML em falha.
 
 **O compositor pode nao ser mais o labwc.** Conferir com
 `echo $XDG_CURRENT_DESKTOP`; as regras de posicionamento de janela para a
@@ -96,3 +126,5 @@ projecao dependem disso.
 
 **Python 3.13 no lugar do 3.11.** O container de desenvolvimento precisa passar
 para `python:3.13-trixie` para as duas trilhas voltarem a espelhar uma a outra.
+Fica para depois da migracao de proposito: enquanto o Pi roda Bookworm, o
+container tem de espelhar o Bookworm.

@@ -1,0 +1,11 @@
+# Raspberry Pi OS 13 (Trixie) - glibc 2.41 ou superior.
+#
+# Faixa em vez de versao exata de proposito: a migracao ainda nao aconteceu e
+# nao ha razao para inventar aqui um numero de patch que talvez nem exista no
+# indice. A serie 6.11 e o alvo; o patch vira pin exato depois da primeira
+# instalacao bem-sucedida, copiado do que o `setup_pi.sh` imprimir.
+#
+# Ate la, o limite superior segura a serie: 6.12 pode mexer de novo em
+# QtQuick.Shapes, que e onde vivem os mostradores.
+PySide6>=6.11,<6.12
+shiboken6>=6.11,<6.12

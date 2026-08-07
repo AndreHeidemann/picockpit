@@ -51,9 +51,10 @@ git clone https://github.com/<seu-usuario>/picockpit.git ~/picockpit
 Deve abrir uma janela de 1280x480 com o painel funcionando sobre o simulador.
 `F11` alterna tela cheia, `Ctrl+Q` encerra.
 
-> **PySide6 fica fixo na 6.8.0.2.** As wheels `aarch64` a partir da 6.8.1 exigem
-> glibc 2.39 e o Raspberry Pi OS 12 tem 2.36. A 6.8.0.2 é a última compatível, e
-> coincide com o ciclo LTS do Qt 6.8. Ver [Decisões técnicas](#decisões-técnicas).
+> **A versão do PySide6 é escolhida pela glibc do sistema.** O `setup_pi.sh` lê
+> a glibc e aplica `constraints/bookworm.txt` (6.8.0.2) ou
+> `constraints/trixie.txt` (série 6.11). Ver
+> [Decisões técnicas](#decisões-técnicas).
 
 ### Instalar como serviço (opcional)
 
@@ -191,10 +192,16 @@ acrescentar um ramo em `create_provider` — nada acima disso muda.
 
 ## Decisões técnicas
 
-**PySide6 fixado em 6.8.0.2.** Wheels `aarch64` a partir da 6.8.1 são
-`manylinux_2_39` (glibc >= 2.39); o Raspberry Pi OS 12 tem glibc 2.36. A 6.8.0.2
-é a última `manylinux_2_31` e cai no ciclo LTS do Qt 6.8. Migrar para Raspberry
-Pi OS Trixie destravaria versões novas, ao custo de reinstalação limpa.
+**PySide6 fixado por arquivo de constraint, não no `pyproject.toml`.** Wheels
+`aarch64` a partir da 6.8.1 são `manylinux_2_39` (glibc >= 2.39); o Raspberry Pi
+OS 12 tem glibc 2.36, então lá a última utilizável é a 6.8.0.2 — que cai no
+ciclo LTS do Qt 6.8. O Trixie tem glibc 2.41 e roda a série 6.11.
+
+Fixar um número único no `pyproject.toml` obrigaria a editar o repositório no
+meio da migração, com o Pi recém-formatado e sem monitor. Em vez disso o
+`pyproject.toml` declara a faixa compatível e o `setup_pi.sh` escolhe o arquivo
+de `constraints/` pela glibc — a decisão fica explícita e o mesmo commit instala
+corretamente nos dois sistemas.
 
 **PySide6 e não PyQt6**, por licença: LGPL permite produto proprietário sem
 contrapartida comercial.

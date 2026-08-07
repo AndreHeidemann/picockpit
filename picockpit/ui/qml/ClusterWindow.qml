@@ -15,7 +15,11 @@ import PiCockpit 1.0
 Window {
     id: cluster
 
+    // Ver ConsoleWindow: `screens` existe na QGuiApplication real, nao no tipo
+    // que o qmllint resolve estaticamente.
+    // qmllint disable missing-property
     readonly property var target: Qt.application.screens[Display.clusterScreen]
+    // qmllint enable missing-property
     readonly property var box: Display.clusterGeometry
 
     // Geometria vem do controlador, que sabe se a tela e exclusiva ou dividida

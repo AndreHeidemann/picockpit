@@ -10,13 +10,18 @@
 // de uma instalacao com tela unica.
 import QtQuick
 import QtQuick.Window
-import QtQuick.Controls
 import PiCockpit 1.0
 
 Window {
     id: hub
 
+    // O qmllint enxerga `Qt.application` como QQmlApplication, que nao declara
+    // `screens`; em execucao o objeto e uma QGuiApplication, que declara. Falso
+    // positivo silenciado no ponto exato, e nao pela categoria inteira - ela
+    // pega erro de verdade em todo o resto da arvore.
+    // qmllint disable missing-property
     readonly property var target: Qt.application.screens[Display.consoleScreen]
+    // qmllint enable missing-property
     readonly property var box: Display.consoleGeometry
 
     // Sozinha na tela ocupa tudo; ao lado do cluster cede a maior parte para a

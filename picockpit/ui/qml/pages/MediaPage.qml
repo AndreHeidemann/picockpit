@@ -1,5 +1,4 @@
 // Area de midia e projecao. Android Auto e escopo da Etapa 5.
-import QtQuick
 import ".."
 import PiCockpit 1.0
 

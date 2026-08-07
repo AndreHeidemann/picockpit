@@ -23,10 +23,26 @@ mapfile -t FILES < <(find "$REPO_DIR/picockpit/ui/qml" -name '*.qml' | sort)
 # PiCockpit sao registrados em tempo de execucao pelo Python, entao nao existem
 # em disco para o qmllint resolver. As categorias que importam - propriedade
 # inexistente, tipo errado, sintaxe - continuam ativas.
-"$QMLLINT" --import disable --unqualified disable "${FILES[@]}"
+output="$("$QMLLINT" --import disable --unqualified disable "${FILES[@]}" 2>&1)"
 status=$?
 
-if [[ $status -eq 0 ]]; then
-  echo "qmllint: ${#FILES[@]} arquivos sem problemas"
+[[ -n "$output" ]] && printf '%s\n' "$output"
+
+# O qmllint devolve zero mesmo tendo impresso avisos, e a versao anterior deste
+# script confiava so no codigo de saida: ele anunciava "sem problemas" logo
+# abaixo de uma tela de avisos. Um aviso novo passaria despercebido no meio dos
+# antigos - que e exatamente o modo de falha que um linter deveria impedir.
+warnings=$(printf '%s\n' "$output" | grep -c '^\(Warning\|Error\|Critical\):')
+notes=$(printf '%s\n' "$output" | grep -c '^Info:')
+
+if [[ $status -ne 0 || $warnings -gt 0 ]]; then
+  echo "qmllint: $warnings aviso(s) em ${#FILES[@]} arquivos" >&2
+  exit 1
 fi
-exit $status
+
+if [[ $notes -gt 0 ]]; then
+  echo "qmllint: ${#FILES[@]} arquivos sem avisos, $notes observacao(oes)"
+  exit 0
+fi
+
+echo "qmllint: ${#FILES[@]} arquivos sem problemas"

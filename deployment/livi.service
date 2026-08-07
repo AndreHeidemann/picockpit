@@ -17,6 +17,14 @@ Documentation=https://github.com/f-io/LIVI
 After=graphical-session.target
 PartOf=graphical-session.target
 
+# Limitador de reinicio. Vive em [Unit], e nao em [Service] - e onde o systemd
+# le. Declarado no lugar errado, `StartLimitIntervalSec` e silenciosamente
+# ignorado e vale o padrao de 10 s, curto demais para segurar qualquer coisa
+# com RestartSec=5. Medido no Pi com o AppImage ausente: 52 reinicios seguidos,
+# sem nenhum aviso, com o limitador aparentemente configurado.
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
 [Service]
 Type=simple
 # %h expande para o diretorio do usuario. O caminho do AppImage e fixado aqui
@@ -29,8 +37,6 @@ ExecStart=%h/Applications/LIVI.AppImage
 # de reinicio com o cabo solto so encheria o log e esquentaria a CPU.
 Restart=on-failure
 RestartSec=5
-StartLimitIntervalSec=120
-StartLimitBurst=3
 
 # A janela dele e posicionada pelo compositor, nao por ele mesmo: no Wayland a
 # aplicacao nao escolhe onde aparece. Ver deployment/labwc-rc.xml.

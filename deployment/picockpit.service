@@ -14,6 +14,15 @@ Documentation=https://github.com/andreheidemann/picockpit
 After=graphical-session.target
 PartOf=graphical-session.target
 
+# Limitador de reinicio. Precisa estar em [Unit]: o systemd le estas duas
+# chaves aqui, e nao em [Service]. Estavam em [Service] desde a Etapa 13 e o
+# intervalo era silenciosamente ignorado - valia o padrao de 10 s, curto demais
+# para conter um laco de falha permanente com RestartSec=3. Descoberto medindo
+# a unidade da projecao, que acumulou 52 reinicios com o limitador
+# aparentemente configurado.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
 [Service]
 Type=simple
 WorkingDirectory=%h/picockpit
@@ -29,13 +38,11 @@ Environment=PICOCKPIT_LOG_DIR=%t/picockpit/logs
 ExecStart=/bin/bash %h/picockpit/scripts/run_pi.sh
 
 # Reinicio automatico e o watchdog do projeto: se a interface cair, ela volta
-# sozinha. StartLimit evita laco de reinicio infinito quando a falha e
-# permanente - depois de 5 tentativas em 60 s o servico para e fica no log,
-# em vez de consumir CPU repetindo o mesmo erro para sempre.
+# sozinha. O limite que evita laco infinito esta em [Unit], acima: depois de 5
+# tentativas em 60 s o servico para e fica no log, em vez de consumir CPU
+# repetindo o mesmo erro para sempre.
 Restart=always
 RestartSec=3
-StartLimitIntervalSec=60
-StartLimitBurst=5
 
 # SIGTERM e o caminho que grava a viagem em andamento. O tempo de espera
 # precisa ser generoso o bastante para o commit no SQLite terminar.

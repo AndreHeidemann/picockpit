@@ -61,6 +61,9 @@ def stack(qt_app):
         "theme": theme,
         "telemetry": telemetry,
         "chrono": chrono,
+        "charts": bridges[5],
+        "settings": bridges[6],
+        "trips": bridges[8],
         "displays": displays,
         "problems": problems,
     }
@@ -170,3 +173,38 @@ def test_second_engine_is_rejected(stack: dict) -> None:
 
     with pytest.raises(RuntimeError, match="um unico engine"):
         build_engine(AppConfig())
+
+
+def test_every_display_controller_follows_the_unit_switch(stack: dict) -> None:
+    """Trocar de unidade nos Ajustes precisa alcancar TODOS os controladores.
+
+    O grafico ficou de fora dessa fiacao e ninguem percebeu por meses: o painel
+    mostrava 30 mph e o grafico ao lado, no mesmo instante, 48 km/h. Um teste
+    por controlador teria passado - o que faltava era a ligacao. Este exercita
+    a troca de verdade, pela tela de ajustes, e cobra coerencia de todos.
+    """
+    settings, telemetry, charts, trips = (
+        stack["settings"],
+        stack["telemetry"],
+        stack["charts"],
+        stack["trips"],
+    )
+    original = settings.units
+    try:
+        settings.setUnits("imperial")
+
+        assert telemetry.speedUnit == "mph"
+        assert charts.unitOf("speed") == "mph"
+        assert charts.unitOf("consumption") == "mpg"
+        # As viagens ja saem formatadas do controlador, entao a unidade so e
+        # observavel dentro do texto.
+        assert trips.totals["distance"].endswith("mi")
+
+        settings.setUnits("metric")
+
+        assert telemetry.speedUnit == "km/h"
+        assert charts.unitOf("speed") == "km/h"
+        assert charts.unitOf("consumption") == "km/L"
+        assert trips.totals["distance"].endswith("km")
+    finally:
+        settings.setUnits(original)

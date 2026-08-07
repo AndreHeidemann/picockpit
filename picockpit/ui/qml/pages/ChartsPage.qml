@@ -27,7 +27,6 @@ Item {
             height: page.cellHeight
             signalName: "speed"
             label: qsTr("VELOCIDADE")
-            units: "km/h"
             accent: Theme.colors.primary
         }
 
@@ -36,7 +35,6 @@ Item {
             height: page.cellHeight
             signalName: "rpm"
             label: qsTr("ROTACAO")
-            units: "rpm"
             accent: Theme.colors.danger
         }
 
@@ -45,7 +43,6 @@ Item {
             height: page.cellHeight
             signalName: "consumption"
             label: qsTr("CONSUMO")
-            units: "km/L"
             accent: Theme.colors.success
             decimals: 1
         }
@@ -55,7 +52,6 @@ Item {
             height: page.cellHeight
             signalName: "engine_load"
             label: qsTr("CARGA DO MOTOR")
-            units: "%"
             accent: Theme.colors.warning
         }
     }

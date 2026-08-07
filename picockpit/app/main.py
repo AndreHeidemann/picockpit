@@ -145,12 +145,14 @@ def build_engine(
     settings.changed.connect(lambda: recorder.set_fuel(settings.fuel))
     recorder.set_fuel(settings.fuel)
 
-    # A troca de unidades acontece na tela de ajustes e precisa alcancar quem
-    # formata os valores.
-    settings.changed.connect(lambda: telemetry.set_units(settings.units))
-    settings.changed.connect(lambda: trips.set_units(settings.units))
-    telemetry.set_units(settings.units)
-    trips.set_units(settings.units)
+    # A troca de unidades acontece na tela de ajustes e precisa alcancar TODOS
+    # os controladores que formatam valor. Esta lista ja teve tres itens e o
+    # quarto - os graficos - ficou de fora: o painel mostrava 30 mph enquanto o
+    # grafico ao lado mostrava 48 km/h. Ficar de fora daqui e silencioso, por
+    # isso existe teste percorrendo esta mesma tupla.
+    for controller in (telemetry, trips, charts):
+        settings.changed.connect(lambda c=controller: c.set_units(settings.units))
+        controller.set_units(settings.units)
 
     # Tema tambem e preferencia persistida: a tela grava, o controlador aplica.
     settings.changed.connect(lambda: theme.activate(settings.theme))

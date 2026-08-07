@@ -68,3 +68,16 @@ def test_conversion_is_reversible_within_tolerance() -> None:
     converted = convert(Signal.SPEED, original, UnitSystem.IMPERIAL).value
 
     assert converted * KM_PER_MILE == pytest.approx(original)
+
+
+def test_charted_signals_all_have_a_display_unit() -> None:
+    """A pagina de graficos parou de escrever unidade a mao; a fonte e esta.
+
+    Se um sinal novo entrar nos graficos sem unidade definida, o rotulo sai
+    vazio na tela - falha silenciosa, do tipo que so aparece olhando.
+    """
+    from picockpit.core.charts import CHARTED_SIGNALS
+
+    for signal in CHARTED_SIGNALS:
+        for system in UnitSystem:
+            assert convert(signal, 0.0, system).unit

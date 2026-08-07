@@ -12,7 +12,10 @@ Item {
 
     property string signalName: ""
     property string label: ""
-    property string units: ""
+    // A unidade vem do controlador, nao da pagina: escrita a mao, ela nao
+    // acompanhava a troca para o sistema imperial e o grafico contradizia o
+    // painel ao lado.
+    readonly property string units: Chart.revision >= 0 ? Chart.unitOf(signalName) : ""
     property color accent: Theme.colors.primary
     property int decimals: 0
 

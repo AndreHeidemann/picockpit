@@ -62,6 +62,26 @@ Item {
         : 0
     readonly property real outerRadius: Math.min(width, height) / 2 - 2
     readonly property real innerRadius: outerRadius - thickness
+    readonly property real scaleRadius: innerRadius - 14
+
+    // O numeral central tem de caber DENTRO do anel, e nao apenas no raio do
+    // mostrador. Com anel grosso o diametro interno encolhe, e um valor de
+    // quatro digitos - "3410" no conta-giros - encosta na escala. Foi o que
+    // aconteceu no Track assim que a espessura passou a vir do tema.
+    //
+    // A largura e estimada pela contagem de caracteres, nao medida no proprio
+    // Text: ler `contentWidth` dentro do binding que define o tamanho da fonte
+    // fecharia um laco de binding. 0.62 e a razao largura/altura tipica de um
+    // digito nesta familia.
+    // A folga de 14 px nao e generosidade: as marcas da escala caem quase na
+    // horizontal, que e o pior caso para um numeral largo, e a razao 0.62
+    // subestima digitos DemiBold como os do Track.
+    readonly property real valueLimitRadius: effectiveScaleSteps >= 2
+        ? scaleRadius - 14
+        : innerRadius - 6
+    readonly property int valuePixelSize: Math.max(12, Math.round(Math.min(
+        outerRadius * Theme.gauge.value_ratio,
+        valueLimitRadius * 2 / (0.62 * Math.max(2, valueText.length)))))
     readonly property real centerX: width / 2
     readonly property real centerY: height / 2
 
@@ -284,7 +304,7 @@ Item {
 
             readonly property real position: index / (gauge.effectiveScaleSteps - 1)
             readonly property real angle: gauge.startAngle + gauge.sweepAngle * position
-            readonly property real distance: gauge.innerRadius - 14
+            readonly property real distance: gauge.scaleRadius
             readonly property bool warned: !isNaN(gauge.warningFrom)
                 && position >= gauge.warningFraction
 
@@ -311,7 +331,7 @@ Item {
             text: gauge.valueText
             color: gauge.inWarning ? Theme.colors.danger : Theme.colors.text
             font {
-                pixelSize: Math.round(gauge.outerRadius * Theme.gauge.value_ratio)
+                pixelSize: gauge.valuePixelSize
                 weight: Theme.gauge.value_weight
             }
         }

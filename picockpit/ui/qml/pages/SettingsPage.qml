@@ -21,6 +21,7 @@ Flickable {
 
         // ------------------------------------------------------------- tema
         Column {
+            width: page.width - 48
             spacing: 10
 
             Text {
@@ -29,19 +30,15 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Cada modo desenha o proprio instrumento: abertura, espessura e segmentacao mudam junto com a cor")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
-                width: page.width - 48
-                wrapMode: Text.WordWrap
             }
 
             // Flow e nao Row: na coluna estreita da multimidia dividida cinco
             // previas de 132 px nao cabem lado a lado, e uma Row as empurraria
             // para fora da tela em silencio.
             Flow {
-                width: page.width - 48
+                width: parent.width
                 spacing: 10
 
                 Repeater {
@@ -66,6 +63,7 @@ Flickable {
 
         // -------------------------------------------------------- unidades
         Column {
+            width: page.width - 48
             spacing: 10
 
             Text {
@@ -74,10 +72,8 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Os dados sao sempre guardados em unidade metrica; a troca afeta so a exibicao")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
             }
 
             Row {
@@ -105,6 +101,7 @@ Flickable {
 
         // ---------------------------------------------------------- tela
         Column {
+            width: page.width - 48
             spacing: 10
 
             Text {
@@ -113,10 +110,8 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Escala da interface")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
             }
 
             Row {
@@ -135,10 +130,8 @@ Flickable {
                 }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Quadros por segundo alvo")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
             }
 
             Row {
@@ -157,9 +150,8 @@ Flickable {
                 }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("O alvo de quadros passa a valer na proxima inicializacao")
-                color: Theme.colors.text_muted
                 font.pixelSize: 11
             }
         }
@@ -172,6 +164,7 @@ Flickable {
 
         // ---------------------------------------------------- tela dividida
         Column {
+            width: page.width - 48
             spacing: 10
 
             Text {
@@ -180,10 +173,8 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("A pagina escolhida na trilha ocupa a regiao principal")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
             }
 
             Row {
@@ -211,10 +202,8 @@ Flickable {
                 }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Pagina da regiao secundaria")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
                 visible: Layout.split
             }
 
@@ -245,6 +234,7 @@ Flickable {
 
         // --------------------------------------------------------- widgets
         Column {
+            width: page.width - 48
             spacing: 10
 
             Text {
@@ -253,10 +243,8 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Cada widget e independente; ligue e desligue a vontade")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
             }
 
             Flow {
@@ -285,6 +273,7 @@ Flickable {
 
         // ------------------------------------------------------ combustivel
         Column {
+            width: page.width - 48
             spacing: 10
             visible: Settings.simulationControls
 
@@ -294,10 +283,8 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Etanol rende menos por litro e entrega mais torque")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
             }
 
             Row {
@@ -326,6 +313,7 @@ Flickable {
 
         // ---------------------------------------------------------- falhas
         Column {
+            width: page.width - 48
             spacing: 10
             visible: Settings.simulationControls
 
@@ -335,10 +323,8 @@ Flickable {
                 font { pixelSize: 20; weight: Font.DemiBold }
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("Provoca codigos de diagnostico para testar os alertas do painel")
-                color: Theme.colors.text_muted
-                font.pixelSize: 12
             }
 
             Flow {
@@ -386,18 +372,20 @@ Flickable {
             onActivated: Settings.restoreDefaults()
         }
 
+        // Largura explicita tambem aqui: uma Column sem largura assume a do
+        // maior filho, e um filho que le `parent.width` para se dimensionar
+        // fecharia um laco de binding.
         Column {
+            width: page.width - 48
             spacing: 6
 
-            Text {
+            SectionNote {
                 text: qsTr("Versao %1 - ambiente %2").arg(AppInfo.version).arg(AppInfo.env)
-                color: Theme.colors.text_muted
                 font.pixelSize: 14
             }
 
-            Text {
+            SectionNote {
                 text: qsTr("F11 alterna tela cheia - Ctrl+Q encerra")
-                color: Theme.colors.text_muted
                 font.pixelSize: 14
             }
         }

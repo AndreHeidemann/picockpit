@@ -114,7 +114,10 @@ Item {
                 readonly property real angle: preview.startAngle
                     + preview.sweepAngle * (index / swatch.geometry.separator_count)
 
-                width: 1
+                // A previa tem cerca de um terco do mostrador real; um traco
+                // de 3 px viraria um bloco aqui. Reduzido, mas nao achatado em
+                // 1 px, senao Track e Technology ficariam iguais.
+                width: Math.max(1, Math.round(swatch.geometry.tick_width * 0.6))
                 height: preview.thickness
                 color: swatch.colors.background
                 antialiasing: true

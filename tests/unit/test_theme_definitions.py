@@ -184,3 +184,17 @@ def test_geometry_serializes_every_field() -> None:
     geometry = get_theme(ThemeName.NORMAL).gauge
 
     assert set(geometry.to_dict()) == set(GaugeGeometry.__dataclass_fields__)
+
+
+def test_the_picker_order_starts_sober_and_ends_at_night() -> None:
+    """A ordem do enum e a ordem do seletor; Night fecha por ser modo de uso."""
+    order = [theme.value for theme in ThemeName]
+
+    assert order[0] == ThemeName.NORMAL.value
+    assert order[-1] == ThemeName.NIGHT.value
+
+
+def test_every_stored_name_still_resolves() -> None:
+    """Reordenar o enum nao pode invalidar preferencia ja gravada."""
+    for stored in ("normal", "sport", "night", "dark", "minimal"):
+        assert get_theme(stored).name.value == stored

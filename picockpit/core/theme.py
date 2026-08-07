@@ -20,13 +20,19 @@ from enum import Enum
 
 
 class ThemeName(str, Enum):
-    """Temas disponiveis."""
+    """Temas disponiveis.
+
+    A ordem e a que o seletor de ajustes apresenta, e vai do mais sobrio ao
+    mais carregado, terminando no noturno - que nao e uma escalada de estilo e
+    sim um modo de uso. Os valores nao mudam com a ordem: e por eles que a
+    preferencia foi gravada.
+    """
 
     NORMAL = "normal"
-    SPORT = "sport"
-    NIGHT = "night"
-    DARK = "dark"
     MINIMAL = "minimal"
+    SPORT = "sport"
+    DARK = "dark"
+    NIGHT = "night"
 
 
 class GaugeStyle(str, Enum):

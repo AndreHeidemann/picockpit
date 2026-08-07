@@ -10,16 +10,28 @@ from picockpit.services.projection import ProjectionService, ProjectionState
 class FakeSystemd:
     """systemd de mentira, com estado controlavel."""
 
-    def __init__(self, load: str = "loaded", active: str = "inactive", code: int = 0) -> None:
+    def __init__(
+        self,
+        load: str = "loaded",
+        active: str = "inactive",
+        code: int = 0,
+        result: str = "success",
+        restarts: str = "0",
+    ) -> None:
         self.load = load
         self.active = active
         self.code = code
+        self.result = result
+        self.restarts = restarts
         self.commands: list[list[str]] = []
 
     def __call__(self, command: list[str]) -> tuple[int, str]:
         self.commands.append(list(command))
         if "show" in command:
-            return 0, f"LoadState={self.load}\nActiveState={self.active}"
+            return 0, (
+                f"LoadState={self.load}\nActiveState={self.active}\n"
+                f"Result={self.result}\nNRestarts={self.restarts}"
+            )
         return self.code, ""
 
 
@@ -118,3 +130,38 @@ def test_a_broken_runner_does_not_escape() -> None:
 
     assert service.state() is ProjectionState.ABSENT
     assert not service.start()
+
+
+# ------------------------------------------------- subida x retentativa
+#
+# Descoberto no Pi, com o AppImage do LIVI ausente: o systemd fica em
+# `activating` enquanto o Restart=on-failure repete, e a interface anunciava
+# "Iniciando..." por dois minutos, com o botao travado. Quem esta no carro
+# precisa saber que ja falhou.
+
+
+def test_activating_after_a_failure_is_a_retry() -> None:
+    service, _ = build(active="activating", result="exit-code")
+
+    assert service.state() is ProjectionState.RETRYING
+
+
+def test_activating_after_a_restart_is_a_retry() -> None:
+    service, _ = build(active="activating", restarts="2")
+
+    assert service.state() is ProjectionState.RETRYING
+
+
+def test_first_activation_is_not_a_retry() -> None:
+    service, _ = build(active="activating", result="success", restarts="0")
+
+    assert service.state() is ProjectionState.STARTING
+
+
+def test_missing_fields_do_not_invent_a_retry() -> None:
+    """systemd antigo pode nao expor NRestarts; ausencia nao e falha."""
+    show = "LoadState=loaded\nActiveState=activating"
+    service = ProjectionService(runner=lambda command: (0, show))
+    service.available = lambda: True  # type: ignore[method-assign]
+
+    assert service.state() is ProjectionState.STARTING

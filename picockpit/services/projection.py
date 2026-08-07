@@ -44,10 +44,12 @@ class ProjectionState(str, Enum):
     ABSENT = "absent"
     #: Instalado e parado.
     STOPPED = "stopped"
-    #: Subindo.
+    #: Subindo pela primeira vez.
     STARTING = "starting"
     #: Rodando.
     RUNNING = "running"
+    #: Caiu e o systemd esta tentando de novo.
+    RETRYING = "retrying"
     #: Terminou em erro - cabo, dongle ou o proprio LIVI.
     FAILED = "failed"
 
@@ -128,7 +130,13 @@ class ProjectionService:
             return ProjectionState.ABSENT
 
         code, output = self._run(
-            ["systemctl", "--user", "show", self._unit, "--property=LoadState,ActiveState"]
+            [
+                "systemctl",
+                "--user",
+                "show",
+                self._unit,
+                "--property=LoadState,ActiveState,Result,NRestarts",
+            ]
         )
         if code != 0 and not output:
             return ProjectionState.ABSENT
@@ -138,9 +146,20 @@ class ProjectionService:
             return ProjectionState.ABSENT
 
         active = fields.get("ActiveState", "")
+        if active == "activating":
+            # `activating` sozinho nao distingue a primeira subida de uma
+            # retentativa. Com o AppImage ausente, o systemd fica horas neste
+            # estado por causa do Restart=on-failure, e a interface anunciava
+            # "Iniciando..." o tempo todo, com o botao travado. Quem esta no
+            # carro precisa saber que ja falhou uma vez.
+            failed_before = fields.get("Result", "success") != "success"
+            restarted = fields.get("NRestarts", "0") not in {"0", ""}
+            if failed_before or restarted:
+                return ProjectionState.RETRYING
+            return ProjectionState.STARTING
+
         return {
             "active": ProjectionState.RUNNING,
-            "activating": ProjectionState.STARTING,
             "reloading": ProjectionState.RUNNING,
             "deactivating": ProjectionState.STOPPED,
             "failed": ProjectionState.FAILED,

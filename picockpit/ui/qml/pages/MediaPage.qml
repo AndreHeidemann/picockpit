@@ -57,7 +57,9 @@ Item {
                 text: Projection.summary
                 color: Projection.state === "failed"
                     ? Theme.colors.danger
-                    : Theme.colors.text_muted
+                    : Projection.state === "retrying"
+                        ? Theme.colors.warning
+                        : Theme.colors.text_muted
                 font.pixelSize: 13
                 wrapMode: Text.WordWrap
             }
@@ -68,14 +70,22 @@ Item {
                 spacing: 10
 
                 ActionButton {
-                    text: Projection.busy ? qsTr("INICIANDO...") : qsTr("INICIAR")
+                    // O rotulo distingue subida de retentativa: "INICIANDO..."
+                    // parado na tela por dois minutos, quando na verdade ja
+                    // falhou tres vezes, e informacao errada.
+                    text: Projection.state === "retrying"
+                        ? qsTr("TENTANDO...")
+                        : Projection.busy ? qsTr("INICIANDO...") : qsTr("INICIAR")
                     enabled: Projection.installed && !Projection.running && !Projection.busy
                     onActivated: Projection.start()
                 }
 
                 ActionButton {
+                    // Habilitado tambem na retentativa: sem isso, sair de um
+                    // laco de reinicio exigiria um terminal, que ninguem tem
+                    // dentro do carro.
                     text: qsTr("PARAR")
-                    enabled: Projection.running
+                    enabled: Projection.stoppable
                     onActivated: Projection.stop()
                 }
             }

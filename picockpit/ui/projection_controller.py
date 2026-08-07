@@ -67,7 +67,22 @@ class ProjectionController(QObject):
     @Property(bool, notify=changed)  # type: ignore[operator]
     def busy(self) -> bool:
         """Indica transicao em andamento, para a interface nao piscar botao."""
-        return self._state is ProjectionState.STARTING
+        return self._state in (ProjectionState.STARTING, ProjectionState.RETRYING)
+
+    @Property(bool, notify=changed)  # type: ignore[operator]
+    def stoppable(self) -> bool:
+        """Indica se ha o que interromper.
+
+        Inclui a retentativa: sem isso, a unica saida de um laco de reinicio -
+        cabo solto, adaptador ausente - seria o terminal, que ninguem tem no
+        carro.
+        """
+        return self._state in (
+            ProjectionState.RUNNING,
+            ProjectionState.STARTING,
+            ProjectionState.RETRYING,
+            ProjectionState.FAILED,
+        )
 
     @Property(str, notify=changed)  # type: ignore[operator]
     def summary(self) -> str:
@@ -76,6 +91,7 @@ class ProjectionController(QObject):
             ProjectionState.ABSENT: "Projecao nao instalada neste sistema",
             ProjectionState.STOPPED: "Pronta - conecte o telefone ou o adaptador",
             ProjectionState.STARTING: "Iniciando...",
+            ProjectionState.RETRYING: "Falhou e esta tentando de novo - confira cabo e adaptador",
             ProjectionState.RUNNING: "Projetando na regiao reservada",
             ProjectionState.FAILED: "Falhou ao iniciar - confira cabo, adaptador e log",
         }[self._state]

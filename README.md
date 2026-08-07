@@ -22,7 +22,9 @@ Veículo de referência: **Ford Ka 1.0 Ti-VCT flex**.
 | Unidades métrico e imperial | pronto |
 | Injeção de falhas OBD-II para testes | pronto |
 | Serviço systemd com kiosk e watchdog | pronto |
-| OBD-II real, Android Auto, tela dividida | planejado |
+| Tela dividida e widgets | pronto |
+| CarPlay e Android Auto | integração pronta; exige Trixie e hardware |
+| OBD-II real | planejado, depende do veículo |
 
 ---
 
@@ -170,7 +172,7 @@ picockpit/
   data/         SQLite: migracoes, viagens, preferencias
   plugins/      pontos de extensao
 configs/        configuracao de fabrica em TOML
-deployment/     unidade systemd
+deployment/     unidades systemd e regra de janela do compositor
 scripts/        setup, execucao, lint, backup, atualizacao
 tests/unit/     dominio, roda no Docker
 tests/integration/  interface e hardware, somente no Pi
@@ -362,9 +364,9 @@ wlr-randr --output HDMI-A-1 --mode 1280x800@60  # ensaio de tela automotiva
 | 10 — Persistência | concluída |
 | 12 — Configurações | concluída |
 | 13 — Produção e watchdog | concluída |
-| 5 — Android Auto | planejada |
-| 6 — Tela dividida | planejada |
-| 7 — Widgets | planejada |
+| 6 — Tela dividida | concluída |
+| 7 — Widgets | concluída |
+| 5 — CarPlay e Android Auto | integração pronta; falta o Trixie e o hardware ([docs/projecao.md](docs/projecao.md)) |
 | 8 — OBD-II e CAN reais | planejada, depende do veículo |
 
 ---
@@ -372,3 +374,5 @@ wlr-randr --output HDMI-A-1 --mode 1280x800@60  # ensaio de tela automotiva
 ## Licença
 
 Projeto proprietário. PySide6 é usado sob LGPL, sem modificação da biblioteca.
+
+A projeção de CarPlay e Android Auto é feita pelo [LIVI](https://github.com/f-io/LIVI), que é GPL-3.0-or-later. Ele roda como **processo separado**, sem compartilhar código nem processo com o PiCockpit — a fronteira entre os dois é a unidade de serviço em `deployment/livi.service`. Nada do LIVI é linkado ou embutido aqui.

@@ -1,0 +1,43 @@
+# Projecao de CarPlay e Android Auto (LIVI), como servico de usuario.
+#
+# Existe para tirar a projecao do autostart que o instalador do LIVI cria. Com
+# autostart ela sobe sozinha no boot, por fora do nosso controle, e aparece por
+# cima do painel do motorista - que e a janela que nao pode ser encoberta.
+# Aqui ela so sobe quando alguem pede, pela pagina de projecao da multimidia.
+#
+# O LIVI e GPL-3.0-or-later e o PiCockpit e proprietario. Sao dois programas
+# separados que nao compartilham processo nem codigo; esta unidade e o limite
+# entre eles.
+#
+# Instalar com scripts/install_projection.sh
+
+[Unit]
+Description=LIVI - projecao CarPlay e Android Auto
+Documentation=https://github.com/f-io/LIVI
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# %h expande para o diretorio do usuario. O caminho do AppImage e fixado aqui
+# em vez de descoberto: descobrir versao mais nova em tempo de boot dentro de
+# um carro e escolher a hora errada para uma surpresa.
+ExecStart=%h/Applications/LIVI.AppImage
+
+# Sem Restart=always de proposito, ao contrario do painel. O painel e essencial
+# e volta sozinho; a projecao depende de cabo, adaptador e telefone, e um laco
+# de reinicio com o cabo solto so encheria o log e esquentaria a CPU.
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+# A janela dele e posicionada pelo compositor, nao por ele mesmo: no Wayland a
+# aplicacao nao escolhe onde aparece. Ver deployment/labwc-rc.xml.
+
+StandardOutput=journal
+StandardError=journal
+
+# Sem [Install]: quem sobe a projecao e a interface, sob comando do usuario.
+# Habilitar isto no graphical-session.target traria de volta exatamente o
+# comportamento de autostart que a unidade existe para evitar.

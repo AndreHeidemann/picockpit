@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Instala a unidade de servico da projecao e mostra o que ainda depende de voce.
+#
+# NAO instala o LIVI. O LIVI e software de terceiros sob GPL-3.0-or-later, com
+# instalador proprio; baixa-lo daqui misturaria as duas distribuicoes sem
+# necessidade. Este script cuida do nosso lado: a unidade que tira a projecao do
+# autostart e a regra de janela do compositor.
+#
+# Executar no Raspberry Pi, depois da migracao para o Trixie.
+set -euo pipefail
+
+REPO_DIR="${REPO_DIR:-$HOME/picockpit}"
+UNIT_DIR="$HOME/.config/systemd/user"
+APPIMAGE="${APPIMAGE:-$HOME/Applications/LIVI.AppImage}"
+LABWC_DIR="$HOME/.config/labwc"
+
+echo "==> Unidade de servico"
+mkdir -p "$UNIT_DIR"
+install -m 644 "$REPO_DIR/deployment/livi.service" "$UNIT_DIR/livi.service"
+systemctl --user daemon-reload
+echo "    $UNIT_DIR/livi.service"
+
+if [[ ! -x "$APPIMAGE" ]]; then
+  echo "    AVISO: $APPIMAGE nao existe ou nao e executavel."
+  echo "    A unidade fica instalada e a interface mostra 'pronta', mas subir"
+  echo "    vai falhar. Instale o LIVI antes - ver docs/projecao.md."
+fi
+
+echo
+echo "==> Autostart do LIVI"
+# O instalador do LIVI cria uma entrada de autostart. Com ela a projecao sobe
+# sozinha no boot, por fora do nosso controle, e cobre o painel do motorista.
+shopt -s nullglob
+autostart=("$HOME/.config/autostart/"*[Ll][Ii][Vv][Ii]*.desktop)
+shopt -u nullglob
+if (( ${#autostart[@]} )); then
+  for entry in "${autostart[@]}"; do
+    echo "    ENCONTRADO: $entry"
+  done
+  echo "    Remova ou renomeie: com autostart a projecao sobe no boot por fora"
+  echo "    da interface. Nao removo por voce - e arquivo de outro programa."
+else
+  echo "    Nenhuma entrada de autostart do LIVI encontrada."
+fi
+
+echo
+echo "==> Regra de janela do compositor"
+if [[ -f "$LABWC_DIR/rc.xml" ]]; then
+  echo "    Ja existe $LABWC_DIR/rc.xml."
+  echo "    Funda a mao o bloco <windowRule> de:"
+  echo "      $REPO_DIR/deployment/labwc-rc.xml"
+  echo "    Sobrescrever apagaria a sua configuracao do compositor."
+else
+  mkdir -p "$LABWC_DIR"
+  install -m 644 "$REPO_DIR/deployment/labwc-rc.xml" "$LABWC_DIR/rc.xml"
+  echo "    Instalado em $LABWC_DIR/rc.xml"
+fi
+
+echo
+echo "==> Conferir a geometria: os dois numeros precisam concordar"
+fraction="$(systemctl --user show picockpit -p Environment 2>/dev/null \
+  | tr ' ' '\n' | sed -n 's/^PICOCKPIT_CONSOLE_FRACTION=//p')"
+echo "    PICOCKPIT_CONSOLE_FRACTION = ${fraction:-0.3 (padrao)}"
+echo "    largura na regra do labwc  = $(sed -n 's/.*ResizeTo" width="\([0-9]*\)".*/\1/p' \
+  "$REPO_DIR/deployment/labwc-rc.xml" | head -1) px"
+echo "    Num display de 1920 px, a projecao deve receber 1920 - 1920*fracao."
+
+echo
+echo "==> Falta conferir o app_id da janela do LIVI"
+echo "    Com o LIVI aberto:  lswt -v   ou   labwc com a opcao de depuracao"
+echo "    Se nao for 'livi', ajuste o identifier na regra. App_id errado nao"
+echo "    da erro: a regra so nunca casa, e a janela aparece em qualquer lugar."

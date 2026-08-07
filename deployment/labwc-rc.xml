@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!--
+  Regra de janela do compositor para a projecao.
+
+  No Wayland a aplicacao nao escolhe onde a propria janela aparece - isso e
+  prerrogativa do compositor. Foi o que descobrimos quando as duas janelas do
+  PiCockpit apareceram empilhadas em vez de lado a lado.
+
+  As nossas janelas nao precisam de regra: o Qt permite atribuir a tela de cada
+  Window, e o resto quem resolve e o DisplayController. Regra aqui nao serviria
+  nem se quisessemos - no Wayland o `app_id` vem da aplicacao, nao da janela, e
+  as nossas duas janelas compartilham o mesmo. Nao ha como distinguir cluster
+  de multimidia por regra de compositor.
+
+  A projecao e outra historia: e processo de terceiros, nao podemos instrumentar
+  por dentro, e a unica forma de prende-la na regiao reservada e descrever aqui
+  onde ela deve ficar.
+
+  Este arquivo e um recorte para ser fundido com o ~/.config/labwc/rc.xml
+  existente, e nao um substituto dele.
+
+  CONFERIR O IDENTIFICADOR ANTES DE CONFIAR NA REGRA. `identifier` casa com o
+  app_id do xdg-shell, e o do LIVI - um aplicativo Electron - pode nao ser
+  exatamente "livi". Descobrir na maquina com:
+
+      lswt -v      (ou o labwc iniciado com a opcao de depuracao)
+
+  Um app_id errado nao gera erro nenhum: a regra simplesmente nunca casa e a
+  janela aparece onde o compositor quiser. E o modo de falha silencioso desta
+  configuracao, e o motivo de o script de instalacao mandar conferir.
+-->
+<labwc_config>
+  <windowRules>
+
+    <!--
+      A regiao que sobra no display da multimidia.
+
+      As coordenadas assumem 1920x1080 com a fracao padrao de 30% para a
+      multimidia: 1920 * 0.3 = 576 px para nos, 1344 px para a projecao,
+      encostada a esquerda. Mudar PICOCKPIT_CONSOLE_FRACTION exige mudar aqui
+      tambem - sao dois arquivos que precisam concordar, e por isso o script de
+      instalacao imprime os dois valores lado a lado.
+    -->
+    <windowRule identifier="livi">
+      <action name="MoveToOutput" output="HDMI-A-2"/>
+      <action name="ResizeTo" width="1344" height="1080"/>
+      <action name="MoveTo" x="0" y="0"/>
+      <skipTaskbar>yes</skipTaskbar>
+      <serverDecoration>no</serverDecoration>
+    </windowRule>
+
+  </windowRules>
+</labwc_config>

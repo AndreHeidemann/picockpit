@@ -31,6 +31,7 @@ from picockpit.ui.chart_controller import ChartController
 from picockpit.ui.chrono_controller import ChronoController
 from picockpit.ui.display_controller import DisplayController
 from picockpit.ui.layout_controller import LayoutController
+from picockpit.ui.projection_controller import ProjectionController
 from picockpit.ui.settings_controller import SettingsController
 from picockpit.ui.telemetry_controller import TelemetryController
 from picockpit.ui.trips_controller import TripsController
@@ -122,6 +123,8 @@ def build_engine(
     chrono = ChronoController(event_bus, chronometer)
     charts = ChartController(event_bus)
     layout = LayoutController(preferences)
+    # A projecao roda noutro processo; aqui so observamos e comandamos.
+    projection = ProjectionController()
     displays = DisplayController(
         cluster_screen=app_config.cluster_screen,
         console_screen=app_config.console_screen,
@@ -175,6 +178,9 @@ def build_engine(
     qmlRegisterSingletonInstance(DisplayController, QML_URI, 1, 0, "Display", displays)
     qmlRegisterSingletonInstance(SettingsController, QML_URI, 1, 0, "Settings", settings)
     qmlRegisterSingletonInstance(TripsController, QML_URI, 1, 0, "Trips", trips)
+    qmlRegisterSingletonInstance(
+        ProjectionController, QML_URI, 1, 0, "Projection", projection
+    )
 
     engine = QQmlApplicationEngine()
     engine.load(QUrl.fromLocalFile(str(QML_ROOT / "Main.qml")))
@@ -189,6 +195,7 @@ def build_engine(
         recorder,
         trips,
         layout,
+        projection,
         displays,
     ]
 

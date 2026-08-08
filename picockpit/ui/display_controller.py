@@ -54,6 +54,19 @@ class DisplayController(QObject):
         self._console = max(0, console_screen)
         self._fraction = min(0.9, max(0.1, console_fraction))
 
+        # O Wayland anuncia as saidas de forma assincrona depois da conexao
+        # do cliente - a QGuiApplication pode ainda so ter uma tela no
+        # instante em que o QML avalia `dual`/`shared` pela primeira vez no
+        # arranque, mesmo com as duas fisicamente presentes. Sem ouvir estes
+        # sinais essa leitura cedo demais fica congelada para sempre: foi o
+        # que aconteceu na maquina real (duas telas, `screenCount` preso em
+        # 1), porque nada reavaliava as propriedades depois que a segunda
+        # saida aparecia. `changed` reavalia tudo que o QML observa.
+        application = QGuiApplication.instance()
+        if application is not None:
+            application.screenAdded.connect(self._on_screens_changed)
+            application.screenRemoved.connect(self._on_screens_changed)
+
         count = self.screenCount
         if self.shared:
             logger.info(
@@ -70,6 +83,19 @@ class DisplayController(QObject):
                 self._console,
                 count,
             )
+
+    def _on_screens_changed(self, screen: Any = None) -> None:  # noqa: ARG002
+        """Reage a uma tela aparecendo ou sumindo depois do arranque.
+
+        O parametro `screen` vem dos sinais `screenAdded`/`screenRemoved` e
+        nao e usado - o que importa e recalcular tudo que depende da
+        contagem atual de telas.
+        """
+        logger.info(
+            "Configuracao de displays mudou (%d agora); reavaliando arranjo",
+            self.screenCount,
+        )
+        self.changed.emit()
 
     # ------------------------------------------------------------- arranjo
 

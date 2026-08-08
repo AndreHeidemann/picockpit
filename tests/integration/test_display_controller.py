@@ -168,3 +168,45 @@ def test_single_screen_gives_the_console_everything(qt_app) -> None:
         console = controller.consoleGeometry
         assert console["x"] == 0
         assert console["width"] > 0
+
+
+# --------------------------------------------------------- telas em tempo real
+
+
+def test_a_screen_appearing_after_startup_is_not_missed(qt_app) -> None:
+    """`dual`/`shared` nao podem ficar presas no que existia no arranque.
+
+    O Wayland anuncia as saidas de forma assincrona depois da conexao do
+    cliente - `QGuiApplication.screens()` pode devolver so uma tela no
+    instante em que o QML avalia essas propriedades pela primeira vez, mesmo
+    com as duas fisicamente presentes. Foi o que aconteceu na maquina real:
+    a segunda saida chegou depois, e nada reavaliava a decisao. O
+    controlador precisa ouvir `screenAdded`/`screenRemoved` e reemitir
+    `changed`, senao o QML nunca sabe que precisa reler `Display.dual`.
+    """
+    controller = build(cluster_screen=0, console_screen=1)
+    received = []
+    controller.changed.connect(lambda: received.append(True))
+
+    controller._on_screens_changed()
+
+    assert received, "changed nao foi emitido quando uma tela apareceu/sumiu"
+
+
+def test_screen_signals_are_actually_connected_at_construction(qt_app) -> None:
+    """Regressao direta: sem a conexao, o teste acima passaria por engano.
+
+    Chamar `_on_screens_changed` a mao prova que o metodo funciona, mas nao
+    prova que o `__init__` de fato o ligou aos sinais da QGuiApplication -
+    e essa ligacao que faltava na versao com o bug.
+    """
+    from PySide6.QtGui import QGuiApplication
+
+    controller = build(cluster_screen=0, console_screen=1)
+    received = []
+    controller.changed.connect(lambda: received.append(True))
+
+    application = QGuiApplication.instance()
+    application.screenAdded.emit(application.primaryScreen())
+
+    assert received, "screenAdded nao esta ligado a _on_screens_changed"

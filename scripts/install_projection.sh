@@ -45,9 +45,12 @@ fi
 
 echo
 echo "==> Regra de janela do compositor"
+echo "    Duas regras: uma prende o LIVI na faixa esquerda, outra prende a"
+echo "    nossa propria janela de multimidia na faixa direita - sem a segunda"
+echo "    o Wayland deixa a nossa janela flutuante onde o labwc quiser."
 if [[ -f "$LABWC_DIR/rc.xml" ]]; then
   echo "    Ja existe $LABWC_DIR/rc.xml."
-  echo "    Funda a mao o bloco <windowRule> de:"
+  echo "    Funda a mao os dois blocos <windowRule> de:"
   echo "      $REPO_DIR/deployment/labwc-rc.xml"
   echo "    Sobrescrever apagaria a sua configuracao do compositor."
 else
@@ -57,16 +60,23 @@ else
 fi
 
 echo
-echo "==> Conferir a geometria: os dois numeros precisam concordar"
+echo "==> Conferir a geometria: os numeros precisam concordar"
 fraction="$(systemctl --user show picockpit -p Environment 2>/dev/null \
   | tr ' ' '\n' | sed -n 's/^PICOCKPIT_CONSOLE_FRACTION=//p')"
-echo "    PICOCKPIT_CONSOLE_FRACTION = ${fraction:-0.3 (padrao)}"
-echo "    largura na regra do labwc  = $(sed -n 's/.*ResizeTo" width="\([0-9]*\)".*/\1/p' \
-  "$REPO_DIR/deployment/labwc-rc.xml" | head -1) px"
-echo "    Num display de 1920 px, a projecao deve receber 1920 - 1920*fracao."
+livi_width="$(sed -n 's/.*ResizeTo" width="\([0-9]*\)".*/\1/p' \
+  "$REPO_DIR/deployment/labwc-rc.xml" | sed -n 1p)"
+console_width="$(sed -n 's/.*ResizeTo" width="\([0-9]*\)".*/\1/p' \
+  "$REPO_DIR/deployment/labwc-rc.xml" | sed -n 2p)"
+echo "    PICOCKPIT_CONSOLE_FRACTION      = ${fraction:-0.3 (padrao)}"
+echo "    largura da regra do livi        = ${livi_width:-?} px"
+echo "    largura da regra da multimidia  = ${console_width:-?} px"
+echo "    Num display de 1920 px, os dois devem somar 1920 e a fracao decidir"
+echo "    o corte: multimidia = 1920*fracao, projecao = 1920 - isso."
 
 echo
 echo "==> Falta conferir o app_id da janela do LIVI"
 echo "    Com o LIVI aberto:  lswt -v   ou   labwc com a opcao de depuracao"
-echo "    Se nao for 'livi', ajuste o identifier na regra. App_id errado nao"
-echo "    da erro: a regra so nunca casa, e a janela aparece em qualquer lugar."
+echo "    Se nao for 'livi', ajuste o identifier na regra do LIVI. App_id"
+echo "    errado nao da erro: a regra so nunca casa, e a janela aparece em"
+echo "    qualquer lugar. A regra da nossa multimidia casa por titulo, nao"
+echo "    depende dessa conferencia."

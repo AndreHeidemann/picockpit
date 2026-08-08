@@ -41,7 +41,7 @@ Window {
     // combustivel na mesma imagem.
     visibility: !Display.dual
         ? Window.Hidden
-        : (AppInfo.kiosk && Display.fullscreenAllowed
+        : (AppInfo.kiosk && Display.clusterFullscreenAllowed
             ? Window.FullScreen
             : Window.Windowed)
     visible: Display.dual

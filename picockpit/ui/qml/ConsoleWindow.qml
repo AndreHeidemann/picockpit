@@ -36,7 +36,11 @@ Window {
     screen: target
     // Sem decoracao no carro; em bancada a janela continua movel.
     flags: AppInfo.kiosk ? Qt.Window | Qt.FramelessWindowHint : Qt.Window
-    visibility: AppInfo.kiosk && Display.fullscreenAllowed
+    // So vai a tela cheia quando e a unica coisa no display: dividindo a tela
+    // ou sem cluster dedicado. Com tela propria e projecao ao lado, tela
+    // cheia faz o Wayland ignorar `box` e tomar a saida inteira - a faixa do
+    // LIVI so existe se esta janela ficar Windowed, do tamanho de `box`.
+    visibility: AppInfo.kiosk && Display.consoleFullscreenAllowed
         ? Window.FullScreen
         : Window.Windowed
 

@@ -141,13 +141,31 @@ class DisplayController(QObject):
             return {"x": 0, "y": 0, "width": width, "height": height}
         if not self.dual:
             return {"x": 0, "y": 0, "width": width, "height": height}
-        return {"x": 0, "y": 0, "width": round(width * self._fraction), "height": height}
+        # Com tela propria a projecao fica encostada a esquerda (regra do
+        # labwc, ver deployment/labwc-rc.xml) - a multimidia precisa ceder
+        # essa faixa em vez de tomar o display inteiro, senao as duas janelas
+        # disputam o mesmo canto.
+        console_width = round(width * self._fraction)
+        return {"x": width - console_width, "y": 0, "width": console_width, "height": height}
 
     @Property(bool, notify=changed)  # type: ignore[operator]
-    def fullscreenAllowed(self) -> bool:  # noqa: N802 - nome consumido pelo QML
-        """Indica se as janelas podem ir a tela cheia.
+    def clusterFullscreenAllowed(self) -> bool:  # noqa: N802 - nome consumido pelo QML
+        """Indica se a janela do cluster pode ir a tela cheia.
 
-        Sempre podem: dividindo a tela existe uma janela so, que deve ocupar o
-        display inteiro e compor as duas regioes por dentro.
+        Sempre pode: quando ela existe como janela propria (`dual`), tem uma
+        saida HDMI so para si - a projecao nunca disputa essa tela.
         """
         return True
+
+    @Property(bool, notify=changed)  # type: ignore[operator]
+    def consoleFullscreenAllowed(self) -> bool:  # noqa: N802 - nome consumido pelo QML
+        """Indica se a janela da multimidia pode ir a tela cheia.
+
+        So quando ela e a unica coisa no display: dividindo a tela (`shared`,
+        onde a janela compoe as duas regioes por dentro) ou sem tela dedicada
+        ao cluster. Com tela propria e a projecao ao lado (`dual`), tela cheia
+        via `Window.FullScreen` faz o Wayland ignorar `consoleGeometry` e
+        cobrir a saida inteira - foi assim que a faixa reservada ao LIVI
+        sumiu na pratica, mesmo com a geometria calculada certa.
+        """
+        return not self.dual

@@ -1,16 +1,30 @@
 <?xml version="1.0"?>
 <!--
-  Regra de janela do compositor para a projecao.
+  Regra de janela do compositor para a projecao e para a nossa multimidia.
 
   No Wayland a aplicacao nao escolhe onde a propria janela aparece - isso e
   prerrogativa do compositor. Foi o que descobrimos quando as duas janelas do
   PiCockpit apareceram empilhadas em vez de lado a lado.
 
-  As nossas janelas nao precisam de regra: o Qt permite atribuir a tela de cada
-  Window, e o resto quem resolve e o DisplayController. Regra aqui nao serviria
-  nem se quisessemos - no Wayland o `app_id` vem da aplicacao, nao da janela, e
-  as nossas duas janelas compartilham o mesmo. Nao ha como distinguir cluster
-  de multimidia por regra de compositor.
+  Enquanto o cluster e a multimidia vao a tela cheia (arranjo de tela unica, ou
+  cada um na sua saida sem projecao ao lado), Qt resolve sozinho: fullscreen e
+  um pedido de protocolo de verdade, o compositor aceita e a janela cobre a
+  saida inteira sem ambiguidade de posicao. Foi por isso que, antes do LIVI
+  existir na composicao, nenhuma regra fazia falta.
+
+  Com a projecao ocupando parte da tela da multimidia, a nossa janela deixa de
+  ser tela cheia: vira uma janela flutuante com tamanho e posicao pedidos
+  (`DisplayController.consoleGeometry`), e pedido de cliente para posicao
+  **nao existe** no protocolo xdg-shell - so o compositor decide onde uma
+  janela flutuante cai. Sem regra aqui, a nossa multimidia ficaria onde o
+  labwc quisesse (tipicamente centralizada), por cima ou por baixo do LIVI.
+
+  Duas janelas, duas regras, e elas nao podem casar pelo mesmo criterio: no
+  Wayland o `app_id` vem da aplicacao, nao da janela, e as nossas duas janelas
+  (cluster e multimidia) compartilham o mesmo. Por isso a nossa regra casa pelo
+  `title`, que e diferente por janela e e definido por nos mesmos - ao
+  contrario do `app_id` do LIVI, nao depende de descobrir nada em tempo de
+  execucao.
 
   A projecao e outra historia: e processo de terceiros, nao podemos instrumentar
   por dentro, e a unica forma de prende-la na regiao reservada e descrever aqui
@@ -38,8 +52,9 @@
       As coordenadas assumem 1920x1080 com a fracao padrao de 30% para a
       multimidia: 1920 * 0.3 = 576 px para nos, 1344 px para a projecao,
       encostada a esquerda. Mudar PICOCKPIT_CONSOLE_FRACTION exige mudar aqui
-      tambem - sao dois arquivos que precisam concordar, e por isso o script de
-      instalacao imprime os dois valores lado a lado.
+      tambem - sao dois arquivos que precisam concordar (na verdade tres,
+      contando a regra da nossa propria janela logo abaixo), e por isso o
+      script de instalacao imprime os valores lado a lado.
     -->
     <windowRule identifier="livi">
       <action name="MoveToOutput" output="HDMI-A-2"/>
@@ -47,6 +62,26 @@
       <action name="MoveTo" x="0" y="0"/>
       <skipTaskbar>yes</skipTaskbar>
       <serverDecoration>no</serverDecoration>
+    </windowRule>
+
+    <!--
+      A nossa propria janela de multimidia, so quando ha projecao ao lado.
+
+      Casa por `title`, e nao por `identifier`: cluster e multimidia sao o
+      mesmo processo Qt e compartilham app_id, mas os titulos das janelas sao
+      escolhidos por nos (ConsoleWindow.qml) e nunca mudam - ao contrario do
+      app_id do LIVI, este aqui nao depende de descobrir nada na maquina.
+
+      Largura e posicao tem que fechar com a regra do LIVI acima: 576 + 1344 =
+      1920. `DisplayController.consoleGeometry` calcula o mesmo numero em
+      Python; esta regra so existe porque o Wayland nao deixa o cliente se
+      posicionar sozinho quando a janela nao esta em tela cheia.
+    -->
+    <windowRule title="PiCockpit OS - Multimidia">
+      <action name="MoveToOutput" output="HDMI-A-2"/>
+      <action name="ResizeTo" width="576" height="1080"/>
+      <action name="MoveTo" x="1344" y="0"/>
+      <skipTaskbar>yes</skipTaskbar>
     </windowRule>
 
   </windowRules>

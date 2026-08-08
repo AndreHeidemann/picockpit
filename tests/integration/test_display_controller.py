@@ -98,10 +98,30 @@ def test_cluster_region_uses_the_remaining_fraction(qt_app) -> None:
     assert controller.clusterGeometry["width"] == pytest.approx(width * 0.75, abs=2)
 
 
-def test_fullscreen_is_always_allowed(qt_app) -> None:
-    """Mesmo dividindo, a unica janela deve ocupar o display inteiro."""
-    assert build(cluster_screen=0, console_screen=0).fullscreenAllowed
-    assert build(cluster_screen=0, console_screen=1).fullscreenAllowed
+def test_cluster_fullscreen_is_always_allowed(qt_app) -> None:
+    """O cluster, quando existe como janela, tem a saida so para ele."""
+    assert build(cluster_screen=0, console_screen=0).clusterFullscreenAllowed
+    assert build(cluster_screen=0, console_screen=1).clusterFullscreenAllowed
+
+
+def test_console_fullscreen_is_allowed_only_without_a_neighbour(qt_app) -> None:
+    """A multimidia so pode ir a tela cheia quando nao precisa ceder espaco.
+
+    Dividindo a tela (`shared`) ou sem cluster dedicado, ela e a unica coisa
+    no display. Com tela propria (`dual`), a projecao fica ao lado - tela
+    cheia tomaria a faixa reservada a ela via `Window.FullScreen`, que ignora
+    `consoleGeometry` e cobre a saida inteira.
+    """
+    shared = build(cluster_screen=0, console_screen=0)
+    assert shared.consoleFullscreenAllowed
+
+    single = build(cluster_screen=0, console_screen=9)
+    if not single.dual:
+        assert single.consoleFullscreenAllowed
+
+    dedicated = build(cluster_screen=0, console_screen=1)
+    if dedicated.dual:
+        assert not dedicated.consoleFullscreenAllowed
 
 
 # ----------------------------------------------------------- telas proprias
@@ -123,6 +143,22 @@ def test_console_takes_its_fraction_of_a_dedicated_screen(qt_app) -> None:
     if controller.dual:
         width, _ = screen_size(controller)
         assert controller.consoleGeometry["width"] < width
+
+
+def test_console_sits_flush_right_leaving_the_left_for_projection(qt_app) -> None:
+    """A regra do labwc prende o LIVI encostado a esquerda (ver labwc-rc.xml).
+
+    Se a nossa janela tambem comecasse em x=0, as duas disputariam o mesmo
+    canto. A multimidia precisa ocupar exatamente a faixa que sobra, sem
+    lacuna nem sobreposicao.
+    """
+    controller = build(cluster_screen=0, console_screen=1, console_fraction=0.3)
+
+    if controller.dual:
+        width, _ = screen_size(controller)
+        console = controller.consoleGeometry
+        assert console["x"] == width - console["width"]
+        assert console["x"] + console["width"] == width
 
 
 def test_single_screen_gives_the_console_everything(qt_app) -> None:

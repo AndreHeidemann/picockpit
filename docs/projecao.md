@@ -114,7 +114,7 @@ Quem sobe a projecao passa a ser a pagina Media da multimidia.
 
 ### 5. Conferir o app_id
 
-A regra do compositor casa pelo `app_id` do xdg-shell. Com o LIVI aberto:
+A regra do LIVI casa pelo `app_id` do xdg-shell. Com o LIVI aberto:
 
 ```bash
 lswt -v
@@ -123,31 +123,46 @@ lswt -v
 Se nao for `livi`, ajuste o `identifier` em `~/.config/labwc/rc.xml`. **App_id
 errado nao gera erro nenhum**: a regra simplesmente nunca casa e a janela
 aparece onde o compositor quiser. E o modo de falha silencioso desta
-configuracao.
+configuracao. A regra da nossa propria janela de multimidia casa por `title`,
+que nos mesmos definimos e nunca muda - nao precisa desta conferencia.
 
 ## Geometria
 
-Dois numeros precisam concordar, em arquivos diferentes:
+Tres numeros precisam concordar, em arquivos diferentes:
 
 | Onde | O que | Padrao |
 | --- | --- | --- |
 | drop-in do `picockpit.service` | `PICOCKPIT_CONSOLE_FRACTION` | `0.3` |
 | `~/.config/labwc/rc.xml` | largura da regra do `livi` | `1344` px |
+| `~/.config/labwc/rc.xml` | largura da regra da multimidia (`title`) | `576` px |
 
-Num display de 1920 px, 30% para a multimidia deixam 1344 px para a projecao.
-Mudar um sem o outro produz sobreposicao ou faixa preta - o
-`install_projection.sh` imprime os dois lado a lado por isso.
+Num display de 1920 px, 30% para a multimidia deixam 1344 px para a projecao;
+as duas larguras da regra do labwc precisam somar o total do display. Mudar um
+sem os outros produz sobreposicao ou faixa preta - o `install_projection.sh`
+imprime os tres lado a lado por isso.
 
 ## Wayland, de novo
 
-A aplicacao nao escolhe onde a propria janela aparece. Nossas janelas se
-resolvem atribuindo a tela pelo Qt; a do LIVI, nao - e processo de terceiros e a
-unica alavanca e a regra do compositor.
+A aplicacao nao escolhe onde a propria janela aparece - isso vale tanto para o
+LIVI quanto para a nossa. Enquanto cluster e multimidia vao a tela cheia
+(`Window.FullScreen`, um pedido de protocolo de verdade), o Qt resolve sozinho
+via `screen:` e nao ha ambiguidade de posicao. Mas com a projecao ocupando
+parte da tela da multimidia, a nossa janela deixa de ser tela cheia - vira uma
+janela flutuante, e posicao de janela flutuante e decisao do compositor, nao
+do cliente. Foi por isso que a faixa reservada para o LIVI estava sumindo na
+pratica mesmo com `DisplayController.consoleGeometry` calculando o numero
+certo: a visibilidade `FullScreen` ignorava a geometria pedida e cobria a
+saida inteira. `DisplayController.consoleFullscreenAllowed` agora so autoriza
+tela cheia quando a multimidia e a unica coisa no display; dividindo a tela
+com a projecao, ela fica `Windowed` do tamanho de `consoleGeometry` e depende
+da regra do compositor abaixo para a posicao.
 
-Vale registrar o limite: no Wayland o `app_id` pertence a **aplicacao**, nao a
-janela. As nossas duas janelas compartilham o mesmo app_id, entao regra de
-compositor nunca conseguiria distinguir cluster de multimidia. Por isso a
-distribuicao delas vive no `DisplayController`, e nao aqui.
+Vale registrar o limite de fundo: no Wayland o `app_id` pertence a
+**aplicacao**, nao a janela. As nossas duas janelas compartilham o mesmo
+app_id, entao uma regra por `identifier` nunca conseguiria distinguir cluster
+de multimidia. Por isso a nossa regra de compositor - a segunda em
+`labwc-rc.xml`, a que prende a multimidia na faixa direita - casa por `title`,
+que e por janela.
 
 ## Cluster stream
 

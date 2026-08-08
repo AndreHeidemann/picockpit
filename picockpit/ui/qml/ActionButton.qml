@@ -7,7 +7,15 @@ Rectangle {
 
     property string text: ""
     property bool highlighted: false
-    property bool enabled: true
+
+    // `enabled` NAO e declarado aqui: ele ja vem do Item. Declarar de novo
+    // sombreava a propriedade da base - funcionava por acidente e o Qt 6.11
+    // passou a avisar ("overrides a member of the base object"), o que virou
+    // falha no teste de fumaca durante a migracao para o Trixie.
+    //
+    // Usar o herdado e melhor: `enabled: false` num Item ja desliga a entrada
+    // dele e de todos os filhos, entao a MouseArea abaixo nao precisa repetir
+    // a condicao para parar de responder.
 
     signal activated()
 
@@ -31,7 +39,6 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        enabled: button.enabled
         onClicked: button.activated()
         onPressed: button.scale = 0.96
         onReleased: button.scale = 1.0

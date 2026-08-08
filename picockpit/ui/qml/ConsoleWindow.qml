@@ -1,7 +1,7 @@
 // Janela da multimidia: navegacao, ajustes e todo o comando do sistema.
 //
 // Com dois displays ocupa apenas uma fracao da tela; o restante fica para a
-// janela de projecao do CarPlay/Android Auto, posicionada pelo compositor -
+// janela de projecao do Android Auto, posicionada pelo compositor -
 // nenhuma das solucoes de projecao entrega o video como item Qt que a gente
 // possa ancorar dentro da nossa cena.
 //

@@ -1,4 +1,4 @@
-// Projecao de CarPlay e Android Auto.
+// Projecao de Android Auto.
 //
 // Esta pagina nao desenha o video. A projecao roda em outro processo, com
 // janela propria posicionada pelo compositor na regiao reservada ao lado da
@@ -9,7 +9,7 @@
 //
 // O que a pagina faz e o que sobra, e nao e pouco: dizer em que estado a
 // projecao esta e dar o comando de ligar e desligar. Sem isso o motorista
-// ficaria diante de uma tela preta sem saber se falta cabo, adaptador ou
+// ficaria diante de uma tela preta sem saber se falta cabo, pareamento ou
 // software.
 import QtQuick
 import ".."
@@ -46,7 +46,7 @@ Item {
                 width: parent.width
                 text: Projection.running
                     ? qsTr("Em exibicao")
-                    : qsTr("CarPlay e Android Auto")
+                    : qsTr("Android Auto")
                 color: Theme.colors.text
                 font { pixelSize: page.narrow ? 22 : 28; weight: Font.Light }
                 wrapMode: Text.WordWrap

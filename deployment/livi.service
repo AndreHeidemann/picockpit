@@ -1,4 +1,4 @@
-# Projecao de CarPlay e Android Auto (LIVI), como servico de usuario.
+# Projecao de Android Auto (LIVI), como servico de usuario.
 #
 # Existe para tirar a projecao do autostart que o instalador do LIVI cria. Com
 # autostart ela sobe sozinha no boot, por fora do nosso controle, e aparece por
@@ -12,7 +12,7 @@
 # Instalar com scripts/install_projection.sh
 
 [Unit]
-Description=LIVI - projecao CarPlay e Android Auto
+Description=LIVI - projecao Android Auto
 Documentation=https://github.com/f-io/LIVI
 After=graphical-session.target
 PartOf=graphical-session.target

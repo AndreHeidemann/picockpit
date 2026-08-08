@@ -21,7 +21,7 @@ theme = "normal"
 kiosk = false
 
 # Displays. O do motorista mostra so instrumentos e nao recebe toque; o da
-# multimidia concentra navegacao, ajustes e a projecao do CarPlay/Android Auto.
+# multimidia concentra navegacao, ajustes e a projecao do Android Auto.
 #
 # Apontar os dois para o MESMO indice divide aquela tela entre as duas janelas.
 # E o arranjo de desenvolvimento: o compartilhamento do Raspberry Pi Connect

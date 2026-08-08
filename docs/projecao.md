@@ -1,8 +1,13 @@
-# Projecao: CarPlay e Android Auto
+# Projecao: Android Auto
 
 Documento de operacao da Etapa 5. A projecao nao e desenhada pelo PiCockpit: ela
 roda em outro processo, o [LIVI](https://github.com/f-io/LIVI), com janela
 propria ao lado da multimidia.
+
+**Escopo: Android Auto apenas.** O CarPlay foi avaliado e descartado - ver
+[Por que sem CarPlay](#por-que-sem-carplay). A decisao nao custa nada em codigo:
+se um dia entrar, entra como mais uma origem de sessao do LIVI, sem tocar na
+nossa camada.
 
 ## Por que outro processo
 
@@ -31,17 +36,41 @@ caminho.
 
 ## Hardware
 
+**Nenhum.** Um cabo USB e o telefone.
+
 | Uso | O que precisa |
 | --- | --- |
 | Android Auto com fio | so o cabo |
 | Android Auto sem fio | nada - o LIVI levanta o proprio ponto de acesso Wi-Fi |
-| CarPlay nativo | coprocessador de autenticacao **MFi** da Apple, no barramento I2C |
-| CarPlay via adaptador | dongle **Carlinkit CPC200-CCPA** (com e sem fio) ou **CCPW** (com fio) |
 
-O coprocessador MFi e um chip fisico. Nao pode ser emulado, e o LIVI nao o
-embute nem contorna. **Para atender iPhone e Android com uma peca so, o caminho
-e o dongle Carlinkit CPC200-CCPA**: ele cobre CarPlay e Android Auto, com e sem
-fio, e dispensa soldar o chip.
+O modo sem fio nao depende de roteador: o LIVI sobe o proprio ponto de acesso e
+o Bluetooth carrega o pareamento e a transferencia da sessao. Um telefone ja
+pareado e reconhecido sozinho depois.
+
+Vale comecar pelo cabo mesmo assim - com fio ha menos variavel entre o telefone
+e a tela, e o objetivo do primeiro teste e validar a nossa integracao, nao a
+qualidade do Wi-Fi.
+
+## Por que sem CarPlay
+
+O CarPlay exige que o acessorio se autentique contra o iPhone com um
+**coprocessador MFi** da Apple. E um chip fisico, licenciado; nao existe
+software que contorne, e o LIVI nao embute nem burla. Restariam dois caminhos,
+os dois pagos:
+
+| Caminho | Custo | Por que nao |
+| --- | --- | --- |
+| Dongle **Carlinkit CPC200-CCPA** (com e sem fio) | ~US$ 50-60 fora, mais imposto | preco desproporcional ao uso pretendido |
+| Dongle **CPC200-CCPW** (so com fio) | menor que o CCPA | mesmo motivo, em escala menor |
+| Chip **MFi** avulso | baixo em tese | exige soldar no barramento I2C e achar a peca |
+
+Decisao de agosto de 2026: **fora de escopo**. O Android Auto entrega o que se
+espera da projecao sem gasto nenhum, e o bloqueio que sobra para a Etapa 5 passa
+a ser apenas a migracao para o Trixie.
+
+Se um dia mudar: comprar o dongle, pluga-lo, e pronto - o LIVI trata o
+adaptador como mais uma origem de sessao. **Nenhuma linha do PiCockpit muda.**
+Este documento existe para que a pesquisa nao precise ser refeita.
 
 ## Instalacao, na ordem
 
@@ -122,9 +151,9 @@ distribuicao delas vive no `DisplayController`, e nao aqui.
 
 ## Cluster stream
 
-O LIVI suporta o fluxo de video de cluster do Android Auto e do CarPlay, com
-area de seguranca configuravel, e tem roteamento multi-display. Ou seja: e
-possivel mandar o mapa para a tela do motorista.
+O LIVI suporta o fluxo de video de cluster do Android Auto, com area de
+seguranca configuravel, e tem roteamento multi-display. Ou seja: e possivel
+mandar o mapa para a tela do motorista.
 
 Fica registrado como possibilidade, nao como plano. Hoje a tela do motorista e
 nossa e mostra instrumentos; dividir esse espaco com navegacao e decisao de
@@ -138,11 +167,17 @@ A pagina Media mostra o estado real, consultado no systemd a cada dois segundos:
 | Estado | O que significa |
 | --- | --- |
 | nao instalada | a unidade `livi.service` nao existe nesta maquina |
-| pronta | instalada e parada; conecte o telefone ou o adaptador |
+| pronta | instalada e parada; conecte o telefone pelo cabo |
 | iniciando | subindo |
 | projetando | ocupando a regiao reservada |
-| falhou | terminou em erro - conferir cabo, adaptador e `journalctl --user -u livi` |
+| tentando de novo | caiu e o systemd esta repetindo - em ambar, com o PARAR liberado |
+| falhou | desistiu - conferir cabo e `journalctl --user -u livi` |
 
 A unidade nao tem `Restart=always`, ao contrario do painel. O painel e essencial
-e volta sozinho; a projecao depende de cabo, adaptador e telefone, e um laco de
-reinicio com o cabo solto so encheria o log e esquentaria a CPU.
+e volta sozinho; a projecao depende de cabo e telefone, e um laco de reinicio
+com o cabo solto so encheria o log e esquentaria a CPU.
+
+O limite de tentativas vive na secao `[Unit]`, e nao em `[Service]` - e onde o
+systemd le. Declarado na secao errada ele e silenciosamente ignorado, e vale o
+padrao de 10 s: medimos 52 reinicios seguidos assim. Com o limite no lugar
+certo, sao tres tentativas e o servico desiste.

@@ -1,4 +1,4 @@
-"""Comando e estado da projecao de CarPlay e Android Auto.
+"""Comando e estado da projecao de Android Auto.
 
 A projecao roda em outro processo - o LIVI - e nao dentro da nossa cena. Duas
 razoes independentes levam a isso:

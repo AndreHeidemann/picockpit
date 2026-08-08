@@ -13,7 +13,7 @@ Duas travas do Bookworm caem de uma vez:
 | OpenGL ES | 3.1 sem suporte pleno no driver do Pi 5 | 3.x completo, exigido pelo LIVI |
 | Python | 3.11 | 3.13 |
 
-O LIVI - central de CarPlay e Android Auto - so roda no Pi 5 com Trixie. Sem a
+O LIVI - central de Android Auto - so roda no Pi 5 com Trixie. Sem a
 migracao, a projecao fica fora do projeto.
 
 ## Antes de reinstalar

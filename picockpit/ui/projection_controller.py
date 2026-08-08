@@ -74,8 +74,8 @@ class ProjectionController(QObject):
         """Indica se ha o que interromper.
 
         Inclui a retentativa: sem isso, a unica saida de um laco de reinicio -
-        cabo solto, adaptador ausente - seria o terminal, que ninguem tem no
-        carro.
+        cabo solto, telefone recusando o pareamento - seria o terminal, que
+        ninguem tem no carro.
         """
         return self._state in (
             ProjectionState.RUNNING,
@@ -89,11 +89,11 @@ class ProjectionController(QObject):
         """Frase curta descrevendo o estado, ja em portugues."""
         return {
             ProjectionState.ABSENT: "Projecao nao instalada neste sistema",
-            ProjectionState.STOPPED: "Pronta - conecte o telefone ou o adaptador",
+            ProjectionState.STOPPED: "Pronta - conecte o telefone pelo cabo",
             ProjectionState.STARTING: "Iniciando...",
-            ProjectionState.RETRYING: "Falhou e esta tentando de novo - confira cabo e adaptador",
+            ProjectionState.RETRYING: "Falhou e esta tentando de novo - confira o cabo",
             ProjectionState.RUNNING: "Projetando na regiao reservada",
-            ProjectionState.FAILED: "Falhou ao iniciar - confira cabo, adaptador e log",
+            ProjectionState.FAILED: "Falhou ao iniciar - confira o cabo e o log",
         }[self._state]
 
     @Slot()

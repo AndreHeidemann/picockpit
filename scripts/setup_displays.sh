@@ -14,6 +14,13 @@
 # driver so conhece a lista de modos padrao - 1280x480 nao esta nela, e a saida
 # cai para 1024x768 silenciosamente. Com `M`, o kernel gera a temporizacao.
 #
+# ATENCAO, a partir do Raspberry Pi OS 13 (Trixie, kernel 6.18): o `video=`
+# continua ligando a saida sem monitor - que e o motivo principal deste script
+# - mas deixou de fixar o modo. Medido na migracao: HDMI-A-1 subiu em 1024x768
+# mesmo com 1280x480M@60D na linha de comando. Quem fixa o modo agora e o
+# `apply_display_modes.sh`, rodado pela unidade picockpit-displays.service na
+# sessao grafica. Os dois sao necessarios e fazem coisas diferentes.
+#
 # Tudo isso depende de `disable_fw_kms_setup=1` no config.txt, que entrega o
 # controle de modo ao kernel em vez do firmware.
 #

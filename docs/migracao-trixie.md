@@ -142,6 +142,19 @@ existe justamente para isso: ele transforma qualquer aviso do QML em falha.
 `echo $XDG_CURRENT_DESKTOP`; as regras de posicionamento de janela para a
 projecao dependem disso.
 
+**O `video=` do kernel nao fixa mais o modo.** No Trixie, com kernel 6.18, o
+parametro continua ligando a saida HDMI sem monitor - o que devolve o acesso
+remoto - mas o modo cai para 1024x768. O `apply_display_modes.sh`, rodado pela
+unidade `picockpit-displays.service`, aplica o modo por `wlr-randr` na sessao
+grafica. Os dois passos sao necessarios e resolvem problemas diferentes.
+
+**`pytest` nao vem com o `setup_pi.sh`.** O script instala so o extra `ui`, que
+e o certo para producao. Para rodar a verificacao acima:
+
+```bash
+~/picockpit-venv/bin/python -m pip install -e ~/picockpit"[dev]"
+```
+
 **Python 3.13 no lugar do 3.11.** O container de desenvolvimento precisa passar
 para `python:3.13-trixie` para as duas trilhas voltarem a espelhar uma a outra.
 Fica para depois da migracao de proposito: enquanto o Pi roda Bookworm, o

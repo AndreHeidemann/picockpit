@@ -1,0 +1,33 @@
+# Fixa os modos de video antes de o painel subir.
+#
+# Existe por uma mudanca de comportamento entre o Bookworm e o Trixie: o
+# `video=` do cmdline.txt continua ligando a saida HDMI sem monitor - que e o
+# que devolve o acesso remoto - mas, com o kernel 6.18, deixou de fixar o modo.
+# Medido na migracao: HDMI-A-1 subindo em 1024x768 com 1280x480 pedido na linha
+# de comando.
+#
+# Unidade separada, e nao um trecho do run_pi.sh, porque sao dois assuntos:
+# configurar a tela e desenhar nela. Assim o painel pode reiniciar dezenas de
+# vezes sem remexer no modo de video, e o modo pode ser reaplicado sem derrubar
+# o painel.
+
+[Unit]
+Description=PiCockpit OS - modos de video das telas automotivas
+After=graphical-session.target
+PartOf=graphical-session.target
+Before=picockpit.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash %h/picockpit/scripts/apply_display_modes.sh
+
+# Sem Restart: e uma acao unica. Se a tela nao estiver la, o script diz e sai
+# com sucesso - painel sem cluster e um arranjo valido, nao uma falha.
+Restart=no
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

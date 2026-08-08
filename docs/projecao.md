@@ -78,14 +78,33 @@ Este documento existe para que a pesquisa nao precise ser refeita.
 
 Software de terceiros, com instalador proprio. Nosso repositorio nao o baixa.
 
+O caminho abaixo mudou depois que a pesquisa original foi feita - o projeto
+separou o instalador em variantes desktop/headless. `scripts/install/pi/install.sh`
+(a versao antiga, documentada por um tempo no README deles) nao existe mais;
+quem serve uma maquina com sessao grafica - o nosso caso - e
+`scripts/install/desktop/install.sh`. Se o `curl` abaixo devolver 404 de novo,
+vale conferir a arvore atual do repositorio antes de supor que e falha de rede -
+foi exatamente isso que aconteceu aqui.
+
 ```bash
-curl -fL -o install.sh https://raw.githubusercontent.com/f-io/LIVI/main/scripts/install/pi/install.sh
+curl -fL -o install.sh https://raw.githubusercontent.com/f-io/LIVI/main/scripts/install/desktop/install.sh
 chmod +x install.sh
-./install.sh
+LIVI_CHANNEL=release LIVI_MFI=no LIVI_SPLASH=no LIVI_HDMI_PR=no ./install.sh
 ```
 
+As quatro variaveis evitam os prompts interativos do instalador e travam nas
+escolhas que ja fizemos: `release` (nao nightly), sem I2C para coprocessador
+MFi (sem CarPlay, ver [Por que sem CarPlay](#por-que-sem-carplay)), sem splash
+de boot (cosmetico, fora de escopo) e sem a reconstrucao do driver `vc4` para
+pixel-repetition (isso e para paineis RGB/VGA abaixo do piso de clock do HDMI -
+as nossas duas telas sao HDMI padrao, entrar nesse fluxo so arriscaria a
+configuracao de video que o `apply_display_modes.sh` ja cuida). Sem essas
+variaveis o instalador pergunta cada uma interativamente, com esses mesmos
+valores como padrao seguro caso a entrada nao seja um terminal.
+
 O instalador baixa o AppImage, cria atalho, **cria uma entrada de autostart** e
-aplica o patch do GStreamer descrito abaixo.
+instala pacotes de sistema (GStreamer, ponto de acesso Wi-Fi, Bluetooth). O
+patch do GStreamer roda por conta propria dentro dele - ver nota abaixo.
 
 ### 2. Patch do GStreamer
 
@@ -120,11 +139,16 @@ A regra do LIVI casa pelo `app_id` do xdg-shell. Com o LIVI aberto:
 lswt -v
 ```
 
-Se nao for `livi`, ajuste o `identifier` em `~/.config/labwc/rc.xml`. **App_id
-errado nao gera erro nenhum**: a regra simplesmente nunca casa e a janela
-aparece onde o compositor quiser. E o modo de falha silencioso desta
-configuracao. A regra da nossa propria janela de multimidia casa por `title`,
-que nos mesmos definimos e nunca muda - nao precisa desta conferencia.
+A regra em `deployment/labwc-rc.xml` ja assume `dev.f-io.livi` - e o
+`StartupWMClass` que o proprio instalador escreve nos atalhos que ele cria
+(`~/.local/share/applications/dev.f-io.livi.desktop` e no `.desktop` da area de
+trabalho), entao e o valor mais provavel. Mas continua sendo dado de terceiro:
+se `lswt -v` mostrar outra coisa, ajuste o `identifier` em
+`~/.config/labwc/rc.xml`. **App_id errado nao gera erro nenhum**: a regra
+simplesmente nunca casa e a janela aparece onde o compositor quiser. E o modo
+de falha silencioso desta configuracao. A regra da nossa propria janela de
+multimidia casa por `title`, que nos mesmos definimos e nunca muda - nao
+precisa desta conferencia.
 
 ## Geometria
 

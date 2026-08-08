@@ -34,8 +34,10 @@
   existente, e nao um substituto dele.
 
   CONFERIR O IDENTIFICADOR ANTES DE CONFIAR NA REGRA. `identifier` casa com o
-  app_id do xdg-shell, e o do LIVI - um aplicativo Electron - pode nao ser
-  exatamente "livi". Descobrir na maquina com:
+  app_id do xdg-shell. Assumido abaixo como "dev.f-io.livi" - e o
+  `StartupWMClass` que o instalador oficial (scripts/install/desktop/install.sh)
+  grava nos atalhos que cria, entao e o palpite mais provavel, mas continua
+  sendo dado de terceiro. Descobrir na maquina com:
 
       lswt -v      (ou o labwc iniciado com a opcao de depuracao)
 
@@ -56,7 +58,7 @@
       contando a regra da nossa propria janela logo abaixo), e por isso o
       script de instalacao imprime os valores lado a lado.
     -->
-    <windowRule identifier="livi">
+    <windowRule identifier="dev.f-io.livi">
       <action name="MoveToOutput" output="HDMI-A-2"/>
       <action name="ResizeTo" width="1344" height="1080"/>
       <action name="MoveTo" x="0" y="0"/>

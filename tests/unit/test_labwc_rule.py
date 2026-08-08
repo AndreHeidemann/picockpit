@@ -19,6 +19,11 @@ RULE_FILE = Path(__file__).resolve().parents[2] / "deployment" / "labwc-rc.xml"
 #: app_id no Wayland.
 CONSOLE_TITLE = "PiCockpit OS - Multimidia"
 
+#: app_id assumido para o LIVI: o StartupWMClass que o instalador oficial
+#: (scripts/install/desktop/install.sh) grava nos atalhos que cria. Palpite,
+#: nao garantia - so `lswt -v` na maquina real confirma.
+LIVI_IDENTIFIER = "dev.f-io.livi"
+
 #: Largura padrao assumida pelas duas regras, com PICOCKPIT_CONSOLE_FRACTION
 #: no valor default (0.3) e um display de 1920px de largura.
 DISPLAY_WIDTH = 1920
@@ -56,7 +61,7 @@ def test_the_file_is_well_formed_xml() -> None:
 def test_both_rules_exist() -> None:
     rules = _rules()
 
-    assert "livi" in rules
+    assert LIVI_IDENTIFIER in rules
     assert CONSOLE_TITLE in rules
 
 
@@ -70,7 +75,7 @@ def test_console_rule_matches_by_title_not_identifier() -> None:
 
 def test_the_two_widths_fill_the_display_with_no_gap_or_overlap() -> None:
     rules = _rules()
-    livi_width = _resize_width(rules["livi"])
+    livi_width = _resize_width(rules[LIVI_IDENTIFIER])
     console_width = _resize_width(rules[CONSOLE_TITLE])
 
     assert livi_width + console_width == DISPLAY_WIDTH
@@ -78,8 +83,8 @@ def test_the_two_widths_fill_the_display_with_no_gap_or_overlap() -> None:
 
 def test_console_sits_flush_right_of_the_projection() -> None:
     rules = _rules()
-    livi_width = _resize_width(rules["livi"])
+    livi_width = _resize_width(rules[LIVI_IDENTIFIER])
     console_x = _move_x(rules[CONSOLE_TITLE])
 
-    assert _move_x(rules["livi"]) == 0
+    assert _move_x(rules[LIVI_IDENTIFIER]) == 0
     assert console_x == livi_width

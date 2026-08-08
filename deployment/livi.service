@@ -26,7 +26,23 @@ StartLimitIntervalSec=120
 StartLimitBurst=3
 
 [Service]
-Type=simple
+# Nao e Type=simple. O binario que o ExecStart aponta nao e o app: e um
+# bootstrap que sobe o compositor proprio do LIVI, que por sua vez reexecuta o
+# mesmo AppImage como cliente Electron - uma cadeia de forks, nao um exec que
+# preserva o PID. Com Type=simple o systemd rastreia so o processo inicial;
+# quando ele sai (~1s, depois de encadear os filhos), o systemd conclui que o
+# servico morreu e mata o cgroup inteiro por baixo - KillMode=control-group e
+# o padrao. O app real mal tinha comecado a subir.
+#
+# Type=forking espera exatamente esse padrao: processo inicial sobe, bifurca e
+# sai (`code=exited, status=0/SUCCESS` e sucesso aqui, nao falha), e o systemd,
+# sem PIDFile configurado, adota como novo PID principal o unico processo que
+# sobra no cgroup - o topo da arvore do LIVI. Confirmado no Pi: com Type=simple
+# a unidade caia sozinha em ~1s; com Type=forking fica `active (running)` com
+# a arvore inteira (compositor, zygotes, gpu-process, renderer) viva, e
+# `systemctl --user stop` derruba tudo de volta a zero processos.
+Type=forking
+
 # %h expande para o diretorio do usuario. O caminho do AppImage e fixado aqui
 # em vez de descoberto: descobrir versao mais nova em tempo de boot dentro de
 # um carro e escolher a hora errada para uma surpresa.

@@ -75,19 +75,12 @@ Connect nao tem tela para compartilhar. Numa instalacao limpa nao ha nem os
 modos forcados nem o `disable_fw_kms_setup=1` que os torna efetivos - o script
 cuida dos dois.
 
-O codigo chega pelo repositorio bare, empurrado do PC - assim o Pi nao precisa
-de credencial de GitHub nenhuma. A chave publica do PC ja foi instalada pelo
-Imager, entao o `push` funciona no primeiro boot.
+O repositorio e publico, entao o Pi clona direto do GitHub - sem credencial,
+sem chave, sem depender do PC estar ligado. O repositorio bare de deploy vem
+depois, quando o ciclo de desenvolvimento recomecar.
 
 ```bash
-# no Pi
-git init --bare ~/picockpit.git
-
-# no PC (WSL)
-git push pi HEAD:refs/heads/main
-
-# no Pi
-git clone ~/picockpit.git ~/picockpit
+git clone https://github.com/AndreHeidemann/picockpit.git ~/picockpit
 git -C ~/picockpit config core.fileMode false
 sudo bash ~/picockpit/scripts/setup_displays.sh
 sudo reboot
@@ -103,9 +96,12 @@ So entao desconectar o monitor e seguir pelo Connect.
 
 ## Restaurar o PiCockpit
 
-O codigo e o repositorio bare ja existem, do passo anterior.
+O codigo ja esta no lugar, do passo anterior.
 
 ```bash
+# 0. Repositorio bare de deploy, para voltar a empurrar codigo do PC
+git init --bare ~/picockpit.git
+
 # 1. Ambiente - escolhe sozinho o constraint pela glibc do sistema
 ~/picockpit/scripts/setup_pi.sh
 

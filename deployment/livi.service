@@ -30,7 +30,13 @@ Type=simple
 # %h expande para o diretorio do usuario. O caminho do AppImage e fixado aqui
 # em vez de descoberto: descobrir versao mais nova em tempo de boot dentro de
 # um carro e escolher a hora errada para uma surpresa.
-ExecStart=%h/Applications/LIVI.AppImage
+#
+# ~/LIVI/LIVI.AppImage, e nao ~/Applications/ - e o caminho que o instalador
+# oficial (scripts/install/desktop/install.sh, $USER_HOME/LIVI/LIVI.AppImage)
+# realmente usa. Confirmado no Pi: instalar sem essa correcao deixa a unidade
+# instalada mas sem nada para executar - falha silenciosa ate alguem tentar
+# subir a projecao.
+ExecStart=%h/LIVI/LIVI.AppImage
 
 # Sem Restart=always de proposito, ao contrario do painel. O painel e essencial
 # e volta sozinho; a projecao depende de cabo, adaptador e telefone, e um laco

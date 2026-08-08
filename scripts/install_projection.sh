@@ -11,7 +11,9 @@ set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-$HOME/picockpit}"
 UNIT_DIR="$HOME/.config/systemd/user"
-APPIMAGE="${APPIMAGE:-$HOME/Applications/LIVI.AppImage}"
+# Caminho real do instalador oficial (scripts/install/desktop/install.sh):
+# $USER_HOME/LIVI/LIVI.AppImage, nao ~/Applications/.
+APPIMAGE="${APPIMAGE:-$HOME/LIVI/LIVI.AppImage}"
 LABWC_DIR="$HOME/.config/labwc"
 
 echo "==> Unidade de servico"

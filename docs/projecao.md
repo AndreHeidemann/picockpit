@@ -188,6 +188,18 @@ de multimidia. Por isso a nossa regra de compositor - a segunda em
 `labwc-rc.xml`, a que prende a multimidia na faixa direita - casa por `title`,
 que e por janela.
 
+Uma terceira pegadinha, essa so visivel na maquina real: `MoveTo x="" y=""` do
+labwc e coordenada **global**, do desktop virtual formado por todas as saidas
+juntas - nao comeca em zero em cada saida. `wlr-randr` mostra as duas lado a
+lado num unico espaco (`HDMI-A-2` em `Position: 1024,0`, por exemplo); um
+`MoveTo x="0"` nao encosta a janela na borda esquerda de onde ela esta, manda
+para x=0 do desktop inteiro, que pode nem estar dentro de saida nenhuma. A
+regra aplicava certo a saida (`MoveToOutput`) e o tamanho (`ResizeTo`), so a
+posicao saia errada - sintoma dificil de separar de "regra nao aplicou". A
+correcao foi trocar `MoveTo` por `MoveToEdge direction="left"` (LIVI) e
+`MoveToEdge direction="right"` (multimidia): essa acao e relativa a saida
+atual da janela, imune a onde ela fica no layout global.
+
 ## Cluster stream
 
 O LIVI suporta o fluxo de video de cluster do Android Auto, com area de

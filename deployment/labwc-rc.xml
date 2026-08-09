@@ -44,6 +44,20 @@
   Um app_id errado nao gera erro nenhum: a regra simplesmente nunca casa e a
   janela aparece onde o compositor quiser. E o modo de falha silencioso desta
   configuracao, e o motivo de o script de instalacao mandar conferir.
+
+  MoveTo E COORDENADA GLOBAL, NAO RELATIVA A SAIDA - segunda pegadinha, achada
+  so na maquina real. `wlr-randr` mostra as duas saidas lado a lado num unico
+  espaco logico (aqui, HDMI-A-2 em Position 1024,0 e HDMI-A-1 em 2944,0); um
+  `<action name="MoveTo" x="0"/>` nao encosta a janela na borda esquerda da
+  saida onde ela esta - manda para x=0 do desktop virtual inteiro, que pode
+  nem estar dentro de saida nenhuma. Foi exatamente esse o bug: a regra
+  aplicava (a saida certa, o tamanho certo), so a posicao saia errada, porque
+  as duas primeiras versoes deste arquivo assumiam origem zero por saida. A
+  posicao dessas saidas depende da ordem de deteccao no arranque e nao e
+  informacao que este arquivo devesse precisar. `MoveToEdge` resolve porque e
+  relativo a saida atual da janela (ja movida por `MoveToOutput` na linha
+  acima): "left"/"right" andam ate a borda da propria saida, sem nenhuma
+  coordenada absoluta para acertar.
 -->
 <labwc_config>
   <windowRules>
@@ -57,11 +71,18 @@
       tambem - sao dois arquivos que precisam concordar (na verdade tres,
       contando a regra da nossa propria janela logo abaixo), e por isso o
       script de instalacao imprime os valores lado a lado.
+
+      `MoveToEdge direction="left"` compensa a posicao global da saida ver
+      comentario no topo do arquivo. `snapWindows="no"` for a a ir ate a borda
+      da tela mesmo se a outra janela ja estiver la, em vez de parar encostada
+      nela - a ordem entre as duas regras (qual mapeia primeiro) nao deveria
+      importar.
     -->
     <windowRule identifier="dev.f-io.livi">
       <action name="MoveToOutput" output="HDMI-A-2"/>
       <action name="ResizeTo" width="1344" height="1080"/>
-      <action name="MoveTo" x="0" y="0"/>
+      <action name="MoveToEdge" direction="left" snapWindows="no"/>
+      <action name="MoveToEdge" direction="up" snapWindows="no"/>
       <skipTaskbar>yes</skipTaskbar>
       <serverDecoration>no</serverDecoration>
     </windowRule>
@@ -74,15 +95,18 @@
       escolhidos por nos (ConsoleWindow.qml) e nunca mudam - ao contrario do
       app_id do LIVI, este aqui nao depende de descobrir nada na maquina.
 
-      Largura e posicao tem que fechar com a regra do LIVI acima: 576 + 1344 =
-      1920. `DisplayController.consoleGeometry` calcula o mesmo numero em
-      Python; esta regra so existe porque o Wayland nao deixa o cliente se
-      posicionar sozinho quando a janela nao esta em tela cheia.
+      Largura tem que fechar com a regra do LIVI acima: 576 + 1344 = 1920.
+      `DisplayController.consoleGeometry` calcula o mesmo numero em Python;
+      esta regra so existe porque o Wayland nao deixa o cliente se posicionar
+      sozinho quando a janela nao esta em tela cheia. `MoveToEdge
+      direction="right"` encosta na borda direita da propria saida - mesma
+      razao do `left` acima, ver comentario no topo do arquivo.
     -->
     <windowRule title="PiCockpit OS - Multimidia">
       <action name="MoveToOutput" output="HDMI-A-2"/>
       <action name="ResizeTo" width="576" height="1080"/>
-      <action name="MoveTo" x="1344" y="0"/>
+      <action name="MoveToEdge" direction="right" snapWindows="no"/>
+      <action name="MoveToEdge" direction="up" snapWindows="no"/>
       <skipTaskbar>yes</skipTaskbar>
     </windowRule>
 

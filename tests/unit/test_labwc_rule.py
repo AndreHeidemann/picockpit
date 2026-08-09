@@ -46,11 +46,21 @@ def _resize_width(rule: ET.Element) -> int:
     raise AssertionError("windowRule sem action ResizeTo")
 
 
-def _move_x(rule: ET.Element) -> int:
-    for action in rule.iter("action"):
-        if action.get("name") == "MoveTo":
-            return int(action.get("x"))
-    raise AssertionError("windowRule sem action MoveTo")
+def _edge_directions(rule: ET.Element) -> set[str]:
+    """Direcoes dos `MoveToEdge` da regra.
+
+    Nao usamos mais `MoveTo` com coordenada absoluta: `wlr-randr` mostra as
+    saidas lado a lado num unico espaco de coordenadas logico (na maquina
+    real, HDMI-A-2 em 1024,0), entao x=0/x=1344 nao encostavam em borda
+    nenhuma - mandavam a janela para o desktop virtual inteiro, nao para a
+    saida onde ela estava. `MoveToEdge` e relativo a saida atual, imune a
+    isso.
+    """
+    return {
+        action.get("direction")
+        for action in rule.iter("action")
+        if action.get("name") == "MoveToEdge"
+    }
 
 
 def test_the_file_is_well_formed_xml() -> None:
@@ -81,10 +91,31 @@ def test_the_two_widths_fill_the_display_with_no_gap_or_overlap() -> None:
     assert livi_width + console_width == DISPLAY_WIDTH
 
 
-def test_console_sits_flush_right_of_the_projection() -> None:
-    rules = _rules()
-    livi_width = _resize_width(rules[LIVI_IDENTIFIER])
-    console_x = _move_x(rules[CONSOLE_TITLE])
+def test_livi_hugs_the_left_edge_of_its_own_output() -> None:
+    """`MoveToEdge`, nao `MoveTo`: ver comentario de `_edge_directions`."""
+    livi = _rules()[LIVI_IDENTIFIER]
 
-    assert _move_x(rules[LIVI_IDENTIFIER]) == 0
-    assert console_x == livi_width
+    assert "left" in _edge_directions(livi)
+    assert "up" in _edge_directions(livi)
+
+
+def test_console_hugs_the_right_edge_of_its_own_output() -> None:
+    """A multimidia encosta a direita - a faixa da esquerda e do LIVI."""
+    console = _rules()[CONSOLE_TITLE]
+
+    assert "right" in _edge_directions(console)
+    assert "up" in _edge_directions(console)
+
+
+def test_edge_actions_do_not_snap_to_the_other_window() -> None:
+    """snapWindows="no": a ordem de mapeamento entre as duas nao pode importar.
+
+    Com o padrao (`yes`), quem mapear por ultimo poderia parar encostado na
+    janela da outra em vez de na borda da tela, se elas already se
+    sobrepoem no instante em que a regra roda.
+    """
+    rules = _rules()
+    for rule in (rules[LIVI_IDENTIFIER], rules[CONSOLE_TITLE]):
+        for action in rule.iter("action"):
+            if action.get("name") == "MoveToEdge":
+                assert action.get("snapWindows") == "no"
